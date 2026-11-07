@@ -1,0 +1,107 @@
+import ee
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.formula.api as smf
+
+# 1. GEE 초기화
+ee_project = 'root-isotope-514006-t8'
+try:
+    ee.Initialize(project=ee_project)
+except Exception:
+    ee.Authenticate()
+    ee.Initialize(project=ee_project)
+
+# 2. 에코델타시티 연구구역
+roi = ee.Geometry.Polygon([
+    [[128.89, 35.09], [128.95, 35.09], [128.95, 35.15], [128.89, 35.15], [128.89, 35.09]]
+])
+
+# 3. Landsat 8-9 전처리 (LST, NDVI, NDBI 동시 산출)
+def prep_landsat(img):
+    opt = img.select('SR_B.').multiply(0.0000275).add(-0.2)
+    lst = img.select('ST_B10').multiply(0.00341802).add(149.0).subtract(273.15).rename('LST')
+    ndvi = img.normalizedDifference(['SR_B5', 'SR_B4']).rename('NDVI')
+    ndbi = img.normalizedDifference(['SR_B6', 'SR_B5']).rename('NDBI') # 시가지성·불투수면 대리 지수
+    return img.addBands(opt, None, True).addBands([lst, ndvi, ndbi])
+
+landsat = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2").merge(ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")) \
+            .filterBounds(roi).filter(ee.Filter.calendarRange(7, 8, 'month'))
+
+def get_period_composite(y1, y2):
+    m1 = landsat.filter(ee.Filter.calendarRange(y1, y1, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    m2 = landsat.filter(ee.Filter.calendarRange(y2, y2, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    return ee.ImageCollection([m1, m2]).mean().clip(roi)
+
+img_b = get_period_composite(2016, 2017)
+img_a = get_period_composite(2024, 2025)
+
+# 4. 식생 수준별 x 거리별 LST 및 NDBI 동시 추출 함수
+def extract_lst_ndbi(img, period_name):
+    lst = img.select('LST')
+    ndbi = img.select('NDBI')
+    ndvi = img.select('NDVI')
+    green_mask = ndvi.gte(0.2)
+
+    # 식생 등급 분리 (High: >=0.5, Med: 0.35~0.5, Low: 0.2~0.35)
+    levels = {
+        'High': ndvi.gte(0.50).And(green_mask),
+        'Med':  ndvi.gte(0.35).And(ndvi.lt(0.50)).And(green_mask),
+        'Low':  ndvi.gte(0.20).And(ndvi.lt(0.35)).And(green_mask)
+    }
+
+    bands = []
+    for level_name, level_mask in levels.items():
+        binary_green = level_mask.toInt().unmask(0)
+        # 6픽셀(180m) 탐색 반경으로 가볍고 빠르게 거리 연산
+        dist_m = binary_green.fastDistanceTransform(6).multiply(30)
+
+        for d in [30, 60, 90, 120, 150]:
+            ring = dist_m.gt(d - 30).And(dist_m.lte(d))
+            bands.append(lst.updateMask(ring).rename(f"LST_{level_name}_{d}mapping"))
+            bands.append(ndbi.updateMask(ring).rename(f"NDBI_{level_name}_{d}mapping"))
+
+    multi_img = ee.Image(bands)
+    stats = multi_img.reduceRegion(
+        reducer=ee.Reducer.mean(),
+        geometry=roi, scale=30, maxPixels=1e9
+    ).getInfo()
+
+    rows = []
+    for level_name in ['High', 'Med', 'Low']:
+        for d in [30, 60, 90, 120, 150]:
+            l_val = stats.get(f"LST_{level_name}_{d}mapping")
+            n_val = stats.get(f"NDBI_{level_name}_{d}mapping")
+            if l_val is not None and n_val is not None:
+                rows.append({
+                    'Period': period_name,
+                    'VegLevel': level_name,
+                    'Distance': int(d),
+                    'Raw_LST': float(l_val),
+                    'NDBI': float(n_val)
+                })
+    return pd.DataFrame(rows)
+
+print("■ 연도별 LST 및 불투수면 지수(NDBI) 동시 추출 중...")
+df_b = extract_lst_ndbi(img_b, '2016-2017 (개발 전)')
+df_a = extract_lst_ndbi(img_a, '2024-2025 (개발 후)')
+
+# 5. 불투수면율(NDBI) 통제 다중회귀 보정 (ANCOVA)
+def apply_ndbi_adjustment(df):
+    # LST ~ VegLevel + Distance + NDBI 모형 적합
+    model = smf.ols('Raw_LST ~ C(VegLevel) + Distance + NDBI', data=df).fit()
+    beta_ndbi = model.params['NDBI']
+    mean_ndbi = df['NDBI'].mean()
+
+    # NDBI가 연구구역 평균값과 같다고 통제했을 때의 순수 보정 LST 산출
+    df['Adjusted_LST'] = df['Raw_LST'] - beta_ndbi * (df['NDBI'] - mean_ndbi)
+    return df, model, beta_ndbi
+
+df_b, model_b, beta_b = apply_ndbi_adjustment(df_b)
+df_a, model_a, beta_a = apply_ndbi_adjustment(df_a)
+
+# 오류가 났던 concat 코드 완성
+df_total = pd.concat([df_b, df_a], ignore_index=True)
+print("\n■ 불투수면(NDBI) 통제 전후 최종 온도 테이블:")
+display(df_total.round(3))
