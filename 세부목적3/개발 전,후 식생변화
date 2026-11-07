@@ -1,0 +1,43 @@
+import ee
+import geemap
+
+# 1. GEE 초기화 (지정해주신 프로젝트 ID 고정)
+try:
+    ee.Initialize(project='root-isotope-514006-t8')
+except:
+    ee.Authenticate()
+    ee.Initialize(project='root-isotope-514006-t8')
+
+# 2. 에코델타시티 연구구역
+roi = ee.Geometry.Polygon([[[128.89, 35.09], [128.95, 35.09], [128.95, 35.15], [128.89, 35.15], [128.89, 35.09]]])
+
+# 3. 위성영상 전처리 (NDVI 산출)
+def prep_landsat(img):
+    ndvi = img.normalizedDifference(['SR_B5', 'SR_B4']).rename('NDVI')
+    return img.addBands(ndvi)
+
+landsat = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2").merge(ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")) \
+            .filterBounds(roi).filter(ee.Filter.calendarRange(7, 8, 'month'))
+
+# 4. 연도별 중앙값 산출 후 기간별 평균 합성
+def get_period_mean(y1, y2):
+    img_y1 = landsat.filter(ee.Filter.calendarRange(y1, y1, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    img_y2 = landsat.filter(ee.Filter.calendarRange(y2, y2, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    return ee.ImageCollection([img_y1, img_y2]).mean().clip(roi)
+
+img_before = get_period_mean(2016, 2017)
+img_after = get_period_mean(2024, 2025)
+
+# 5. 식생 시각화 파라미터 (자연스러운 녹색 그라데이션)
+ndvi_vis = {'min': 0.2, 'max': 0.7, 'palette': ['#ffffcc', '#c2e699', '#78c679', '#31a354', '#006837']}
+
+# 6. 지도 생성 (크게 볼 수 있도록 800px 설정)
+Map = geemap.Map(basemap='SATELLITE', height='800px')
+Map.centerObject(roi, 14)
+
+# 7. 레이어 추가 (NDVI 0.2 이상 픽셀만, 투명도 0.7 적용)
+Map.addLayer(img_before.select('NDVI').updateMask(img_before.select('NDVI').gte(0.2)), ndvi_vis, '2016-2017 식생 수준', opacity=0.7)
+Map.addLayer(img_after.select('NDVI').updateMask(img_after.select('NDVI').gte(0.2)), ndvi_vis, '2024-2025 식생 수준', opacity=0.7)
+
+# 8. 지도 출력
+Map
