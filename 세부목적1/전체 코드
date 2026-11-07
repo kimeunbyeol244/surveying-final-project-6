@@ -1,0 +1,642 @@
+%pip install -q koreanize-matplotlib "bottleneck>=1.5"
+# ==============================================================
+# 에코델타시티 RQ1 / Colab + Earth Engine Python
+# 2016–2017년 여름 vs 2024–2025년 여름
+# 01 전처리 / 02 지수–LST / 03 피복전환 / 04 회귀 / 05 검증 / 06 지도
+# ==============================================================
+from pathlib import Path
+import shutil
+import ee
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import koreanize_matplotlib
+
+PROJECT = 'surveying2earthengine'
+ASSET = 'projects/surveying2earthengine/assets/EDC_boundary'
+OUT = Path('outputs')
+OUT.mkdir(exist_ok=True)
+CRS = 'EPSG:32652'
+P30 = ee.Projection(CRS).atScale(30)
+P10 = ee.Projection(CRS).atScale(10)
+P100 = ee.Projection(CRS).atScale(100)
+P500 = ee.Projection(CRS).atScale(500)
+QA_LIMIT = 5      # ST_QA: 5 K 이하
+MIN_DW_PROB = 0.35
+MIN_DW_COVER = 0.50
+YEARS = (2016, 2017, 2024, 2025)
+NAMES = {1:'시가지(대리)', 2:'나지', 3:'녹지', 4:'수면', 5:'농경지'}
+PROB_BANDS = ['water','trees','grass','flooded_vegetation','crops',
+              'shrub_and_scrub','built','bare','snow_and_ice']
+PALETTE = ['c4281b','a59b8f','397d49','419bdf','e49635']
+
+# 인증을 앞 셀에서 마쳤다면 다시 Authenticate() 할 필요 없음
+ee.Initialize(project=PROJECT)
+print('Earth Engine 연결:', ee.Number(1).getInfo())
+roi = ee.FeatureCollection(ASSET).geometry()
+print('연구 경계 면적(km²):', roi.area(1).divide(1e6).getInfo())
+
+
+def stats(image, reducer=ee.Reducer.mean(), scale=100):
+    return image.reduceRegion(reducer=reducer, geometry=roi, crs=CRS,
+                              scale=scale, maxPixels=1e9, tileScale=4).getInfo()
+
+
+def area_km2(mask, scale=100):
+    img = ee.Image.pixelArea().rename('area').updateMask(mask)
+    x = img.reduceRegion(reducer=ee.Reducer.sum(), geometry=roi,
+                         crs=CRS, scale=scale, maxPixels=1e9,
+                         tileScale=4).get('area')
+    return ee.Number(ee.Algorithms.If(x, x, 0)).divide(1e6).getInfo()
+
+
+def as_df(image, columns):
+    fc = image.select(columns).sample(region=roi, projection=P100,
+                                      scale=100, dropNulls=True,
+                                      geometries=False, tileScale=4)
+    count = fc.size().getInfo()
+    rows = []
+    for offset in range(0, count, 400):
+        sub = ee.FeatureCollection(fc.toList(min(400, count-offset), offset))
+        rows += [f['properties'] for f in sub.getInfo()['features']]
+    return pd.DataFrame(rows, columns=columns)
+
+
+# --------------------------------------------------------------
+# [01] Landsat 8 L2 여름 합성 및 지수·온도 계산
+# --------------------------------------------------------------
+def l8_raw(year):
+    return (ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+            .filterBounds(roi)
+            .filterDate(f'{year}-07-01', f'{year}-09-01')
+            .filter(ee.Filter.eq('PROCESSING_LEVEL', 'L2SP'))
+            .filter(ee.Filter.lte('CLOUD_COVER', 80)))
+
+
+def l8_prepare(img, qa_limit=5):
+    qa = img.select('QA_PIXEL')
+    valid = (qa.bitwiseAnd(63).eq(0)
+             .And(img.select('QA_RADSAT').eq(0))
+             .And(img.select('ST_QA').multiply(0.01).lte(qa_limit))
+             .And(img.select('ST_CDIST').multiply(0.01).gte(0.2)))
+    sr = img.select(['SR_B3','SR_B4','SR_B5','SR_B6']).multiply(0.0000275).add(-0.2)
+    green, red, nir, swir = (sr.select(b) for b in ['SR_B3','SR_B4','SR_B5','SR_B6'])
+
+    def index(a, b, name):
+        den = a.add(b)
+        v = a.subtract(b).divide(den).rename(name)
+        return v.updateMask(den.abs().gt(0.01)).updateMask(v.gte(-1).And(v.lte(1)))
+
+    lst = (img.select('ST_B10').multiply(0.00341802)
+           .add(149).subtract(273.15).rename('LST'))
+    result = ee.Image.cat(lst, index(nir, red, 'NDVI'),
+                          index(swir, nir, 'NDBI'), index(green, swir, 'MNDWI'))
+    return result.updateMask(valid).copyProperties(img, ['system:time_start'])
+
+
+def l8_year(year, qa_limit=5):
+    return l8_raw(year).map(lambda im: l8_prepare(im, qa_limit)).median()
+
+
+def make_delta(qa_limit=5):
+    yearly = {y:l8_year(y, qa_limit) for y in YEARS}
+    before = yearly[2016].add(yearly[2017]).divide(2)
+    after = yearly[2024].add(yearly[2025]).divide(2)
+
+    # 30 m 합성 영상을 같은 100 m 격자로 집계
+    def aggregate(im):
+        return (im.setDefaultProjection(P30)
+                .reduceResolution(reducer=ee.Reducer.mean(), maxPixels=1024)
+                .reproject(P100).clip(roi))
+    before, after = aggregate(before), aggregate(after)
+    common = (before.mask().reduce(ee.Reducer.min())
+              .And(after.mask().reduce(ee.Reducer.min())))
+    before = before.updateMask(common)
+    after = after.updateMask(common)
+    delta = (after.subtract(before)
+             .rename(['dLST','dNDVI','dNDBI','dMNDWI'])
+             .updateMask(common).clip(roi))
+    return before, after, delta
+
+
+for year in YEARS:
+    raw = l8_raw(year)
+    print(year, 'Landsat 장면 수:', raw.size().getInfo(),
+          '촬영일:', raw.aggregate_array('DATE_ACQUIRED').getInfo())
+
+before, after, delta = make_delta(QA_LIMIT)
+print('유효 LST 면적(km²):', area_km2(delta.select('dLST').mask()))
+print('전체 ΔLST 통계:', stats(delta.select('dLST'),
+      ee.Reducer.mean().combine(ee.Reducer.minMax(), sharedInputs=True)))
+
+# --------------------------------------------------------------
+# [02] 세 지수 구간별 평균 LST
+# --------------------------------------------------------------
+first = as_df(before, ['LST','NDVI','NDBI','MNDWI'])
+last = as_df(after, ['LST','NDVI','NDBI','MNDWI'])
+CUTS = {'NDVI':[-1.01,0,0.2,0.4,0.6,1.01],
+        'NDBI':[-1.01,-0.3,-0.1,0.1,0.3,1.01],
+        'MNDWI':[-1.01,-0.3,-0.1,0.1,0.3,1.01]}
+rows = []
+for band, cuts in CUTS.items():
+    for period, frame in [('초기 2016-17',first),('최근 2024-25',last)]:
+        for i,(lo,hi) in enumerate(zip(cuts[:-1],cuts[1:]),1):
+            sub = frame.loc[(frame[band]>=lo)&(frame[band]<hi),'LST'].dropna()
+            rows.append({'variable':band,'period':period,
+                         'bin':f'{i:02d} [{lo},{hi})',
+                         'meanLST':sub.mean() if len(sub) else np.nan,'n':len(sub)})
+index_table = pd.DataFrame(rows)
+index_table.to_csv(OUT/'02_index_bins.csv', index=False, encoding='utf-8-sig')
+print('\n[02] 지수 구간별 LST\n', index_table.to_string(index=False))
+
+# --------------------------------------------------------------
+# [03] Dynamic World 5종 분류 및 전환별 LST
+# --------------------------------------------------------------
+def dw_raw(year):
+    return (ee.ImageCollection('GOOGLE/DYNAMICWORLD/V1')
+            .filterBounds(roi)
+            .filterDate(f'{year}-07-01', f'{year}-09-01'))
+
+
+def dw_prob(year):
+    return dw_raw(year).select(PROB_BANDS).mean().setDefaultProjection(P10)
+
+
+def classify(probs, threshold=0.35):
+    best = probs.reduce(ee.Reducer.max())
+    argmax = probs.toArray().arrayArgmax().arrayGet([0])
+    lc10 = (argmax.remap([0,1,2,3,4,5,6,7,8],
+                         [4,3,3,3,5,3,1,2,0], 0)
+            .rename('LC10')
+            .updateMask(best.gte(threshold))
+            .updateMask(argmax.neq(8))
+            .setDefaultProjection(P10))
+    coverage = (lc10.mask().unmask(0).setDefaultProjection(P10)
+                .reduceResolution(reducer=ee.Reducer.mean(), maxPixels=256)
+                .reproject(P100))
+    lc100 = (lc10.reduceResolution(reducer=ee.Reducer.mode(), maxPixels=256)
+             .reproject(P100).rename('LC').toInt()
+             .updateMask(coverage.gte(MIN_DW_COVER)).clip(roi))
+    return lc100
+
+for y in YEARS:
+    print(y, 'Dynamic World 장면 수:', dw_raw(y).size().getInfo())
+
+prob_before = dw_prob(2016).add(dw_prob(2017)).divide(2).setDefaultProjection(P10)
+prob_after = dw_prob(2024).add(dw_prob(2025)).divide(2).setDefaultProjection(P10)
+lc_before = classify(prob_before, MIN_DW_PROB)
+lc_after = classify(prob_after, MIN_DW_PROB)
+
+# 500 m 블록 기반 검증 구획
+xy = ee.Image.pixelCoordinates(P500)
+block = xy.select('x').multiply(100000).add(xy.select('y')).toInt().rename('block')
+fold = (xy.select('x').multiply(17).add(xy.select('y').multiply(31))
+        .abs().mod(5).toInt().rename('fold'))
+
+pre_lc = as_df(before.select('LST').addBands(lc_before), ['LST','LC'])
+post_lc = as_df(after.select('LST').addBands(lc_after), ['LST','LC'])
+paired = as_df(delta.addBands(lc_before.rename('from'))
+               .addBands(lc_after.rename('to'))
+               .addBands(block), ['dLST','dNDVI','dNDBI','dMNDWI','from','to','block'])
+
+period_rows = []
+recent_rows = []
+for k, label in NAMES.items():
+    for period, frame, lc in [('초기 2016-17',pre_lc,lc_before),
+                              ('최근 2024-25',post_lc,lc_after)]:
+        vals = frame.loc[frame['LC']==k,'LST'].dropna()
+        period_rows.append({'type':label,'period':period,'meanLST':vals.mean(),
+                            'n':len(vals),'classifiedKm2':area_km2(lc.eq(k))})
+    vals = paired.loc[paired['to']==k,'dLST'].dropna()
+    recent_rows.append({'type':label,'meanDelta':vals.mean(),'n':len(vals)})
+
+period_table = pd.DataFrame(period_rows)
+recent_table = pd.DataFrame(recent_rows)
+period_table.to_csv(OUT/'03_cover_period.csv',index=False,encoding='utf-8-sig')
+recent_table.to_csv(OUT/'03_cover_delta.csv',index=False,encoding='utf-8-sig')
+
+TRANSITIONS = [(5,1,'농경지→시가지'), (5,2,'농경지→나지'),
+               (3,1,'녹지→시가지'), (3,2,'녹지→나지'),
+               (2,1,'나지→시가지'), (5,3,'농경지→녹지'),
+               (5,5,'농경지 유지'), (3,3,'녹지 유지'),
+               (1,1,'시가지 유지'), (4,4,'수면 유지')]
+trows = []
+for from_id, to_id, label in TRANSITIONS:
+    vals = paired[(paired['from']==from_id)&(paired['to']==to_id)]
+    mask = lc_before.eq(from_id).And(lc_after.eq(to_id))
+    trows.append({'type':label,'meanDelta':vals['dLST'].mean(),
+                  'n':len(vals),'nBlocks':vals['block'].nunique(),
+                  'classifiedKm2':area_km2(mask),
+                  'validGridKm2':len(vals)*0.01})
+transition_table = pd.DataFrame(trows)
+transition_table.to_csv(OUT/'03_transitions.csv',index=False,encoding='utf-8-sig')
+print('\n[03] 피복별 평균 LST\n',period_table.to_string(index=False))
+print('\n[03] 전환별 ΔLST\n',transition_table.to_string(index=False))
+
+# --------------------------------------------------------------
+# [04] ΔLST ~ ΔNDVI/ΔNDBI/ΔMNDWI 회귀
+# --------------------------------------------------------------
+reg_df = as_df(delta.addBands(fold), ['dLST','dNDVI','dNDBI','dMNDWI','fold'])
+cols = ['dLST','dNDVI','dNDBI','dMNDWI']
+reg_df = reg_df.dropna(subset=cols+['fold'])
+train = reg_df[reg_df.fold!=0]
+test = reg_df[reg_df.fold==0]
+print('\n[04] 회귀 표본 전체/훈련/검증:', len(reg_df),len(train),len(test))
+if len(train)<10 or len(test)<5:
+    raise RuntimeError('회귀 표본이 부족함. 경계/자료 마스크를 확인하세요.')
+mu = train[cols].mean()
+sig = train[cols].std(ddof=0).clip(lower=1e-12)
+Ztr = (train[cols]-mu)/sig
+Zte = (test[cols]-mu)/sig
+
+
+def fit(names):
+    def matrix(df):
+        return np.column_stack([np.ones(len(df)),df[names].to_numpy(dtype=float)])
+    y = Ztr['dLST'].to_numpy(dtype=float)
+    coef = np.linalg.lstsq(matrix(Ztr),y,rcond=None)[0]
+    def r2(df):
+        actual = df['dLST'].to_numpy(dtype=float)
+        predicted = matrix(df) @ coef
+        ss_total = ((actual-actual.mean())**2).sum()
+        return 1-((actual-predicted)**2).sum()/ss_total if ss_total>0 else np.nan
+    return coef, r2(Ztr),r2(Zte)
+
+specs = [('NDVI 단독',['dNDVI']),('NDBI 단독',['dNDBI']),
+         ('MNDWI 단독',['dMNDWI']),('NDBI+MNDWI',['dNDBI','dMNDWI']),
+         ('3변수 진단용',['dNDVI','dNDBI','dMNDWI'])]
+cor = reg_df[cols].corr()
+models, betas = [], []
+for title,names in specs:
+    co,tr,te = fit(names)
+    if len(names)==1:
+        vif=1.0
+    else:
+        rr = Ztr[names].corr().to_numpy()
+        vif = float(np.diag(np.linalg.inv(rr)).max())
+    models.append({'model':title,'trainR2':tr,'testR2':te,'maxVIF':vif})
+    for i,name in enumerate(names):
+        betas.append({'model':title,'variable':name,'beta':co[i+1]})
+model_table = pd.DataFrame(models)
+beta_table = pd.DataFrame(betas)
+corr_table = cor.reset_index().rename(columns={'index':'variable'})
+model_table.to_csv(OUT/'04_models.csv',index=False,encoding='utf-8-sig')
+beta_table.to_csv(OUT/'04_betas.csv',index=False,encoding='utf-8-sig')
+corr_table.to_csv(OUT/'04_correlations.csv',index=False,encoding='utf-8-sig')
+print('\n[04] 상관계수\n', cor.round(3).to_string())
+print('\n[04] 회귀모형 검증\n', model_table.round(3).to_string(index=False))
+print('\n[04] 표준화계수\n',beta_table.round(3).to_string(index=False))
+
+# --------------------------------------------------------------
+# [05] ST_QA 및 DW 분류확률 민감도
+# --------------------------------------------------------------
+qa_rows=[]
+for q in [5,7]:
+    d = delta if q==QA_LIMIT else make_delta(q)[2]
+    qa_rows.append({'ST_QA_K':q,
+                    'meanDelta':stats(d.select('dLST')).get('dLST'),
+                    'validKm2':area_km2(d.select('dLST').mask())})
+qa_table=pd.DataFrame(qa_rows)
+qa_table.to_csv(OUT/'05_thermal_quality.csv',index=False,encoding='utf-8-sig')
+
+sens_rows=[]
+for threshold in [0.25,0.35,0.50]:
+    a,b=classify(prob_before,threshold),classify(prob_after,threshold)
+    for fr,to,name in [(5,1,'농경지→시가지'),(5,2,'농경지→나지')]:
+        mask=a.eq(fr).And(b.eq(to))
+        vals=as_df(delta.select('dLST').updateMask(mask),['dLST'])
+        sens_rows.append({'probability':threshold,'transition':name,
+                          'meanDelta':vals['dLST'].mean(), 'n':len(vals),
+                          'classifiedKm2':area_km2(mask)})
+sens_table=pd.DataFrame(sens_rows)
+sens_table.to_csv(OUT/'05_dw_threshold.csv',index=False,encoding='utf-8-sig')
+print('\n[05] 온도 QA 민감도\n',qa_table.to_string(index=False))
+print('\n[05] 분류확률 민감도\n',sens_table.to_string(index=False))
+
+# --------------------------------------------------------------
+# [06] 각 분석의 PNG 그래프 생성
+# --------------------------------------------------------------
+def save_bar(df, x,y,title,filename,ylabel):
+    d=df.dropna(subset=[y])
+    fig,ax=plt.subplots(figsize=(10,5))
+    ax.bar(d[x].astype(str),d[y])
+    ax.set(title=title,ylabel=ylabel)
+    ax.tick_params(axis='x',labelrotation=25)
+    for label in ax.get_xticklabels(): label.set_ha('right')
+    ax.axhline(0,color='black',lw=.8)
+    ax.grid(axis='y',alpha=.2)
+    fig.tight_layout()
+    fig.savefig(OUT/filename,dpi=180,bbox_inches='tight')
+    plt.close(fig)
+
+for band in CUTS:
+    sub=index_table[index_table.variable==band]
+    wide=sub.pivot(index='bin',columns='period',values='meanLST')
+    ax=wide.plot(kind='bar',figsize=(10,5),rot=30,title=f'{band} 구간별 LST')
+    ax.set_ylabel('평균 LST (℃)')
+    ax.grid(axis='y',alpha=.2)
+    ax.figure.tight_layout()
+    ax.figure.savefig(OUT/f'02_{band}_lst.png',dpi=180,bbox_inches='tight')
+    plt.close(ax.figure)
+
+save_bar(transition_table,'type','meanDelta','토지피복 전환별 LST 변화',
+         '03_transition_delta.png','평균 ΔLST (℃)')
+model_four=model_table[model_table.model!='3변수 진단용'].set_index('model')[['trainR2','testR2']]
+ax=model_four.plot(kind='bar',figsize=(10,5),rot=20,title='회귀모형 훈련/검증 R²')
+ax.set_ylabel('R²')
+ax.figure.tight_layout()
+ax.figure.savefig(OUT/'04_model_r2.png',dpi=180,bbox_inches='tight')
+plt.close(ax.figure)
+save_bar(beta_table[beta_table.model=='NDBI+MNDWI'], 'variable','beta',
+         'NDBI+MNDWI 표준화 회귀계수','04_dual_beta.png','표준화 β')
+
+# --------------------------------------------------------------
+
+# ============================================================
+# 07. 토지피복 검증 지도 - 오류 수정판
+#
+# geemap 사용하지 않음
+# folium + Earth Engine API 직접 사용
+#
+# 기존 분석 변수:
+# roi, lc_before, lc_after, PALETTE, NAMES
+# ============================================================
+
+import ee
+import folium
+from IPython.display import display
+
+# 이미 인증했으므로 재인증 불필요
+ee.Initialize(project="surveying2earthengine")
+
+
+# Earth Engine 영상을 Folium 지도에 추가
+def add_ee_layer(
+    map_obj,
+    image,
+    vis_params,
+    name,
+    shown=True,
+    opacity=1.0
+):
+
+    map_id = ee.Image(image).getMapId(
+        vis_params
+    )
+
+    folium.TileLayer(
+        tiles=map_id["tile_fetcher"].url_format,
+        attr="Google Earth Engine",
+        name=name,
+        overlay=True,
+        control=True,
+        show=shown,
+        opacity=opacity
+    ).add_to(map_obj)
+
+
+# Sentinel-2 영상 불러오기
+def sentinel(year):
+
+    collection = (
+        ee.ImageCollection(
+            "COPERNICUS/S2_HARMONIZED"
+        )
+        .filterBounds(roi.buffer(1200))
+        .filterDate(
+            f"{year}-07-01",
+            f"{year}-09-01"
+        )
+        .filter(
+            ee.Filter.lte(
+                "CLOUDY_PIXEL_PERCENTAGE",
+                60
+            )
+        )
+    )
+
+    def prep(image):
+
+        qa = image.select("QA60")
+
+        clear = (
+            qa.bitwiseAnd(1 << 10).eq(0)
+            .And(
+                qa.bitwiseAnd(1 << 11).eq(0)
+            )
+        )
+
+        return (
+            image.select(
+                ["B4", "B3", "B2"],
+                ["red", "green", "blue"]
+            )
+            .multiply(0.0001)
+            .updateMask(clear)
+        )
+
+    return collection.map(prep).median()
+
+
+# 두 해의 위성영상 합성
+def sentinel_period(year1, year2):
+
+    return ee.ImageCollection.fromImages([
+        sentinel(year1),
+        sentinel(year2)
+    ]).mean().clip(roi.buffer(1200))
+
+
+# 연구지역 중심
+center = roi.centroid(1).coordinates().getInfo()
+
+LAT = center[1]
+LON = center[0]
+
+
+# 연구지역 경계
+boundary = (
+    ee.Image()
+    .byte()
+    .paint(
+        ee.FeatureCollection(
+            "projects/surveying2earthengine/assets/EDC_boundary"
+        ),
+        1,
+        2
+    )
+    .selfMask()
+)
+
+
+# 토지피복 지도 생성
+def make_map(lc, years, title):
+
+    m = folium.Map(
+        location=[LAT, LON],
+        zoom_start=12,
+        tiles="OpenStreetMap",
+        height=600
+    )
+
+    rgb = sentinel_period(
+        years[0],
+        years[1]
+    )
+
+    add_ee_layer(
+        m,
+        rgb,
+        {
+            "bands": [
+                "red", "green", "blue"
+            ],
+            "min": 0.02,
+            "max": 0.30,
+            "gamma": 1.2
+        },
+        f"{title} 위성영상",
+        True
+    )
+
+    # 전체 토지피복 5종
+    add_ee_layer(
+        m,
+        lc,
+        {
+            "min": 1,
+            "max": 5,
+            "palette": PALETTE
+        },
+        f"{title} 전체 토지피복 5종",
+        True,
+        0.65
+    )
+
+    # 개별 토지피복 ON/OFF
+    for value, name in NAMES.items():
+
+        add_ee_layer(
+            m,
+            lc.eq(value).selfMask(),
+            {
+                "palette": [
+                    PALETTE[value - 1]
+                ]
+            },
+            f"{title} {name}",
+            False,
+            0.75
+        )
+
+    # 노란색 연구지역 경계
+    add_ee_layer(
+        m,
+        boundary,
+        {
+            "palette": ["ffff00"]
+        },
+        "연구지역 경계",
+        True
+    )
+
+    folium.LayerControl(
+        collapsed=False
+    ).add_to(m)
+
+    return m
+
+
+# ============================================================
+# 초기 2016~2017 지도
+# ============================================================
+
+print("초기 2016~2017 토지피복")
+
+initial_map = make_map(
+    lc_before,
+    [2016, 2017],
+    "초기"
+)
+
+display(initial_map)
+
+
+# ============================================================
+# 최근 2024~2025 지도
+# ============================================================
+
+print("최근 2024~2025 토지피복")
+
+recent_map = make_map(
+    lc_after,
+    [2024, 2025],
+    "최근"
+)
+
+display(recent_map)
+
+
+# ============================================================
+# 농경지 전환 지도
+# ============================================================
+
+transition = (
+    lc_before.multiply(10)
+    .add(lc_after)
+)
+
+transition_map = folium.Map(
+    location=[LAT, LON],
+    zoom_start=12,
+    tiles="OpenStreetMap",
+    height=600
+)
+
+add_ee_layer(
+    transition_map,
+    sentinel_period(2024, 2025),
+    {
+        "bands": ["red", "green", "blue"],
+        "min": 0.02,
+        "max": 0.30,
+        "gamma": 1.2
+    },
+    "최근 위성영상"
+)
+
+# 빨간색: 농경지 → 시가지
+add_ee_layer(
+    transition_map,
+    transition.eq(51).selfMask(),
+    {"palette": ["ff2222"]},
+    "농경지 → 시가지",
+    True,
+    0.8
+)
+
+# 주황색: 농경지 → 나지
+add_ee_layer(
+    transition_map,
+    transition.eq(52).selfMask(),
+    {"palette": ["ffaa00"]},
+    "농경지 → 나지",
+    True,
+    0.8
+)
+
+add_ee_layer(
+    transition_map,
+    boundary,
+    {"palette": ["ffff00"]},
+    "연구지역 경계"
+)
+
+folium.LayerControl(
+    collapsed=False
+).add_to(transition_map)
+
+print("토지피복 전환 지도")
+display(transition_map)
+
+print("07번 지도 출력 완료")
