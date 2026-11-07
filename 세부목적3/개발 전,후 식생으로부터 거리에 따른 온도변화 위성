@@ -1,0 +1,85 @@
+import ee
+import geemap
+
+# 1. GEE 초기화
+ee_project = 'root-isotope-514006-t8'
+try:
+    ee.Initialize(project=ee_project)
+except Exception:
+    ee.Authenticate()
+    ee.Initialize(project=ee_project)
+
+# 2. 에코델타시티 연구구역
+roi = ee.Geometry.Polygon([
+    [[128.89, 35.09], [128.95, 35.09], [128.95, 35.15], [128.89, 35.15], [128.89, 35.09]]
+])
+
+# 3. Landsat 전처리 함수 (LST 및 NDVI 산출)
+def prep_landsat(img):
+    opt = img.select('SR_B.').multiply(0.0000275).add(-0.2)
+    lst = img.select('ST_B10').multiply(0.00341802).add(149.0).subtract(273.15).rename('LST')
+    ndvi = img.normalizedDifference(['SR_B5', 'SR_B4']).rename('NDVI')
+    return img.addBands(opt, None, True).addBands(lst).addBands(ndvi)
+
+landsat = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2").merge(ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")) \
+            .filterBounds(roi).filter(ee.Filter.calendarRange(7, 8, 'month'))
+
+def get_period_composite(y1, y2):
+    m1 = landsat.filter(ee.Filter.calendarRange(y1, y1, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    m2 = landsat.filter(ee.Filter.calendarRange(y2, y2, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    return ee.ImageCollection([m1, m2]).mean().clip(roi)
+
+img_before = get_period_composite(2016, 2017)
+img_after = get_period_composite(2024, 2025)
+
+# 4. 녹지 주변 150m 버퍼 영역의 LST 추출 (가장 확실한 기하학적 버퍼 방식)
+def get_green_buffer_lst(img):
+    # 식생 마스크 (NDVI 0.2 이상)
+    green_mask = img.select('NDVI').gte(0.2)
+
+    # 식생 영역을 벡터(폴리곤)로 변환
+    green_vec = green_mask.selfMask().reduceToVectors(
+        geometry=roi,
+        scale=60, # 연산 속도와 안정성을 위해 60m 설정
+        geometryType='polygon',
+        eightConnected=True,
+        maxPixels=1e9
+    )
+
+    # 녹지 경계에서 바깥쪽으로 150m 확장 버퍼 생성
+    buffer_150m = green_vec.geometry().buffer(150)
+
+    # 150m 버퍼 영역 안의 LST만 잘라내기 (클립)
+    return img.select('LST').clip(buffer_150m)
+
+lst_buf_before = get_green_buffer_lst(img_before)
+lst_buf_after = get_green_buffer_lst(img_after)
+
+# 5. 지도 생성 (800px)
+Map = geemap.Map(basemap='SATELLITE', height='800px')
+Map.centerObject(roi, 14)
+
+# 6. 온도 시각화 파라미터 (파랑: 저온 ~ 빨강: 고온)
+vis_params = {
+    'min': 28.0,
+    'max': 42.0,
+    'palette': ['#0000ff', '#00ffff', '#00ff00', '#ffff00', '#ff7f00', '#ff0000']
+}
+
+# 7. 레이어 추가 (불투명도 0.8로 선명하게 표시)
+Map.addLayer(lst_buf_before, vis_params, '1. [2016-2017] 식생 주변 150m LST', True, opacity=0.8)
+Map.addLayer(lst_buf_after, vis_params, '2. [2024-2025] 식생 주변 150m LST', False, opacity=0.8)
+
+# 8. 범례 추가
+legend_dict = {
+    '42°C 이상 (고온)': '#ff0000',
+    '38°C ~ 40°C': '#ff7f00',
+    '35°C ~ 37°C': '#ffff00',
+    '32°C ~ 34°C': '#00ff00',
+    '30°C ~ 31°C': '#00ffff',
+    '28°C 이하 (저온)': '#0000ff'
+}
+Map.add_legend(title="식생 주변 150m LST", legend_dict=legend_dict)
+
+# 9. 지도 출력
+Map
