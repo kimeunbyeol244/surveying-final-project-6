@@ -1,0 +1,146 @@
+import ee
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 1. GEE 초기화 (지정 프로젝트 ID 고정)
+ee_project = 'root-isotope-514006-t8'
+try:
+    ee.Initialize(project=ee_project)
+except Exception:
+    ee.Authenticate()
+    ee.Initialize(project=ee_project)
+
+# 2. 에코델타시티 연구구역
+roi = ee.Geometry.Polygon([
+    [[128.89, 35.09], [128.95, 35.09], [128.95, 35.15], [128.89, 35.15], [128.89, 35.09]]
+])
+
+# 3. Landsat 8-9 전처리 (LST 및 NDVI 산출)
+def prep_landsat(img):
+    opt = img.select('SR_B.').multiply(0.0000275).add(-0.2)
+    lst = img.select('ST_B10').multiply(0.00341802).add(149.0).subtract(273.15).rename('LST')
+    ndvi = img.normalizedDifference(['SR_B5', 'SR_B4']).rename('NDVI')
+    return img.addBands(opt, None, True).addBands(lst).addBands(ndvi)
+
+landsat = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2").merge(ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")) \
+            .filterBounds(roi).filter(ee.Filter.calendarRange(7, 8, 'month'))
+
+def get_period_composite(y1, y2):
+    m1 = landsat.filter(ee.Filter.calendarRange(y1, y1, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    m2 = landsat.filter(ee.Filter.calendarRange(y2, y2, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    return ee.ImageCollection([m1, m2]).mean().clip(roi)
+
+img_before = get_period_composite(2016, 2017)
+img_after = get_period_composite(2024, 2025)
+
+# 4. 식생 수준별 x 거리별(30~150m) LST 정량 추출 함수
+def extract_lst_by_distance(img, period_name):
+    lst = img.select('LST')
+    ndvi = img.select('NDVI')
+
+    # 식생 구역 마스킹 (NDVI >= 0.2)
+    green_mask = ndvi.gte(0.2)
+
+    # 녹지 내부 분위수 계산 (33.3%, 66.7%)
+    p = ndvi.updateMask(green_mask).reduceRegion(
+        reducer=ee.Reducer.percentile([33.3, 66.7]),
+        geometry=roi, scale=30, maxPixels=1e9
+    ).getInfo()
+
+    p33 = p.get('NDVI_p33', 0.30)
+    p67 = p.get('NDVI_p67', 0.50)
+    if p33 is None: p33 = 0.30
+    if p67 is None: p67 = 0.50
+
+    # 식생 수준 3등급 분리
+    levels = {
+        'High': ndvi.gte(p67).And(green_mask),
+        'Med':  ndvi.gte(p33).And(ndvi.lt(p67)).And(green_mask),
+        'Low':  ndvi.gte(0.2).And(ndvi.lt(p33)).And(green_mask)
+    }
+
+    # 각 등급별 30m 단위 링 버퍼 밴드 생성 (0-30, 30-60, 60-90, 90-120, 120-150m)
+    bands = []
+    for level_name, level_mask in levels.items():
+        binary_green = level_mask.toInt().unmask(0)
+        # 10픽셀(300m) 탐색 반경 내 유클리디안 거리(m) 계산
+        dist_m = binary_green.fastDistanceTransform(10).multiply(30)
+
+        for d in [30, 60, 90, 120, 150]:
+            d_min = d - 30
+            d_max = d
+            ring = dist_m.gt(d_min).And(dist_m.lte(d_max))
+            band = lst.updateMask(ring).rename(f"{level_name}_{d}")
+            bands.append(band)
+
+    # 전체 15개 구간을 한 번에 리듀스
+    multi_img = ee.Image(bands)
+    stats = multi_img.reduceRegion(
+        reducer=ee.Reducer.mean(),
+        geometry=roi, scale=30, maxPixels=1e9
+    ).getInfo()
+
+    rows = []
+    for key, val in stats.items():
+        if val is not None:
+            lvl, d_str = key.split('_')
+            rows.append({
+                'Period': period_name,
+                'VegLevel': lvl,
+                'Distance': int(d_str),
+                'LST': float(val)
+            })
+    return pd.DataFrame(rows)
+
+print("■ 위성 데이터로부터 거리별/식생수준별 LST 통계 추출 중...")
+df_before = extract_lst_by_distance(img_before, '2016-2017 (개발 전)')
+df_after = extract_lst_by_distance(img_after, '2024-2025 (개발 후)')
+df_all = pd.concat([df_before, df_after], ignore_index=True)
+
+# 5. 꺾은선 그래프 시각화 (좌: 개발 전 / 우: 개발 후 나란히 비교)
+fig, axes = plt.subplots(1, 2, figsize=(14, 5.5), sharey=True)
+
+palette = {'High': '#006837', 'Med': '#31a354', 'Low': '#78c679'}
+hue_order = ['High', 'Med', 'Low']
+
+# (1) 2016-2017 그래프
+sns.lineplot(
+    ax=axes[0], data=df_before, x='Distance', y='LST',
+    hue='VegLevel', hue_order=hue_order, palette=palette,
+    marker='o', markersize=8, linewidth=2.5
+)
+axes[0].set_title('2016-2017: Before Development', fontsize=13, fontweight='bold', pad=10)
+axes[0].set_xlabel('Distance from Greenery (m)', fontsize=11)
+axes[0].set_ylabel('Mean LST (°C)', fontsize=11)
+axes[0].set_xticks([30, 60, 90, 120, 150])
+axes[0].grid(True, linestyle='--', alpha=0.6)
+axes[0].legend(title='Veg Level', loc='upper left')
+
+# (2) 2024-2025 그래프
+sns.lineplot(
+    ax=axes[1], data=df_after, x='Distance', y='LST',
+    hue='VegLevel', hue_order=hue_order, palette=palette,
+    marker='s', markersize=8, linewidth=2.5
+)
+axes[1].set_title('2024-2025: After Development', fontsize=13, fontweight='bold', pad=10)
+axes[1].set_xlabel('Distance from Greenery (m)', fontsize=11)
+axes[1].set_xticks([30, 60, 90, 120, 150])
+axes[1].grid(True, linestyle='--', alpha=0.6)
+axes[1].legend(title='Veg Level', loc='upper left')
+
+plt.suptitle('LST Variation by Distance & Vegetation Level (Eco-Delta City)', fontsize=14, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+
+# 6. 보고서/발표 슬라이드용 정량 통계 요약표 출력
+print("\n" + "="*60)
+print("■ 거리별 / 식생 수준별 평균 지표면온도(LST, °C) 요약표")
+print("="*60)
+pivot_table = df_all.pivot_table(index=['Period', 'VegLevel'], columns='Distance', values='LST')
+# 정렬 순서 맞춤
+pivot_table = pivot_table.reindex(index=pd.MultiIndex.from_product(
+    [['2016-2017 (개발 전)', '2024-2025 (개발 후)'], ['High', 'Med', 'Low']],
+    names=['Period', 'VegLevel']
+))
+display(pivot_table.round(2))
