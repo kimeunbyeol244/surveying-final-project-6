@@ -1,42 +1,113 @@
+
 import ee
 import geemap
 
-# 1. GEE 초기화 (지정해주신 프로젝트 ID 고정)
+# 1. GEE 초기화
+PROJECT = 'root-isotope-514006-t8'
+
 try:
-    ee.Initialize(project='root-isotope-514006-t8')
-except:
+    ee.Initialize(project=PROJECT)
+except Exception:
     ee.Authenticate()
-    ee.Initialize(project='root-isotope-514006-t8')
+    ee.Initialize(project=PROJECT)
 
 # 2. 에코델타시티 연구구역
-roi = ee.Geometry.Polygon([[[128.89, 35.09], [128.95, 35.09], [128.95, 35.15], [128.89, 35.15], [128.89, 35.09]]])
+NW_CORNER = (35.1581, 128.9021)
+SE_CORNER = (35.1386, 128.9196)
 
-# 3. 위성영상 전처리 (NDVI 산출)
+# Earth Engine 좌표 순서: [경도, 위도]
+roi = ee.Geometry.Rectangle([
+    NW_CORNER[1], SE_CORNER[0],
+    SE_CORNER[1], NW_CORNER[0]
+])
+
+# 3. 위성영상 전처리 (지표반사율 보정 + NDVI)
 def prep_landsat(img):
-    ndvi = img.normalizedDifference(['SR_B5', 'SR_B4']).rename('NDVI')
-    return img.addBands(ndvi)
+    red = img.select('SR_B4').multiply(0.0000275).add(-0.2)
+    nir = img.select('SR_B5').multiply(0.0000275).add(-0.2)
 
-landsat = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2").merge(ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")) \
-            .filterBounds(roi).filter(ee.Filter.calendarRange(7, 8, 'month'))
+    ndvi = nir.subtract(red).divide(nir.add(red)).rename('NDVI')
 
-# 4. 연도별 중앙값 산출 후 기간별 평균 합성
+    # 구름 및 구름 그림자 제거
+    qa = img.select('QA_PIXEL')
+    cloud_mask = qa.bitwiseAnd(63).eq(0)
+
+    return img.addBands(ndvi).updateMask(cloud_mask)
+
+# 4. Landsat 8/9 영상 수집
+landsat = (
+    ee.ImageCollection("LANDSAT/LC08/C02/T1_L2")
+    .merge(ee.ImageCollection("LANDSAT/LC09/C02/T1_L2"))
+    .filterBounds(roi)
+    .filter(ee.Filter.calendarRange(7, 8, 'month'))
+    .filter(ee.Filter.lt('CLOUD_COVER', 30))
+)
+
+# 5. 연도별 중앙값 → 기간별 평균
 def get_period_mean(y1, y2):
-    img_y1 = landsat.filter(ee.Filter.calendarRange(y1, y1, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
-    img_y2 = landsat.filter(ee.Filter.calendarRange(y2, y2, 'year')).filter(ee.Filter.lt('CLOUD_COVER', 30)).map(prep_landsat).median()
+    img_y1 = (
+        landsat
+        .filter(ee.Filter.calendarRange(y1, y1, 'year'))
+        .map(prep_landsat)
+        .select('NDVI')
+        .median()
+    )
+
+    img_y2 = (
+        landsat
+        .filter(ee.Filter.calendarRange(y2, y2, 'year'))
+        .map(prep_landsat)
+        .select('NDVI')
+        .median()
+    )
+
     return ee.ImageCollection([img_y1, img_y2]).mean().clip(roi)
 
 img_before = get_period_mean(2016, 2017)
 img_after = get_period_mean(2024, 2025)
 
-# 5. 식생 시각화 파라미터 (자연스러운 녹색 그라데이션)
-ndvi_vis = {'min': 0.2, 'max': 0.7, 'palette': ['#ffffcc', '#c2e699', '#78c679', '#31a354', '#006837']}
+# 6. NDVI 시각화 설정
+ndvi_vis = {
+    'min': 0.2,
+    'max': 0.7,
+    'palette': [
+        '#ffffcc',
+        '#c2e699',
+        '#78c679',
+        '#31a354',
+        '#006837'
+    ]
+}
 
-# 6. 지도 생성 (크게 볼 수 있도록 800px 설정)
+# 7. 지도 생성
 Map = geemap.Map(basemap='SATELLITE', height='800px')
 Map.centerObject(roi, 14)
 
-# 7. 레이어 추가 (NDVI 0.2 이상 픽셀만, 투명도 0.7 적용)
-Map.addLayer(img_before.select('NDVI').updateMask(img_before.select('NDVI').gte(0.2)), ndvi_vis, '2016-2017 식생 수준', opacity=0.7)
+# 8. 식생(NDVI >= 0.2) 레이어 추가
+Map.addLayer(
+    img_before.updateMask(img_before.gte(0.2)),
+    ndvi_vis,
+    '2016-2017 식생 수준',
+    opacity=0.7
+)
+
+Map.addLayer(
+    img_after.updateMask(img_after.gte(0.2)),
+    ndvi_vis,
+    '2024-2025 식생 수준',
+    opacity=0.7
+)
+
+# 9. 연구구역 경계 표시
+Map.addLayer(
+    roi,
+    {'color': 'red'},
+    '연구구역 경계'
+)
+
+# 10. 지도 출력
+Map
+
 Map.addLayer(img_after.select('NDVI').updateMask(img_after.select('NDVI').gte(0.2)), ndvi_vis, '2024-2025 식생 수준', opacity=0.7)
 
 # 8. 지도 출력
