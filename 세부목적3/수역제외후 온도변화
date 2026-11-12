@@ -1,1 +1,622 @@
+# ============================================================
+# 부산 에코델타시티
+# 녹지 경계로부터 거리별 평균 LST
+# MNDWI >= 0 수역 완전 제외
+#
+# 개발 전: 2016-2017년 7-8월
+# 개발 후: 2024-2025년 7-8월
+#
+# 녹지: NDVI >= 0.20
+# 수역: MNDWI >= 0
+#
+# 거리:
+# 0-30, 30-60, 60-90, 90-120, 120-150m
+#
+# NDBI 보정 없음
+# ============================================================
+
+import ee
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from IPython.display import display
+
+# ============================================================
+# 1. GEE 초기화
+# ============================================================
+
+PROJECT = 'glass-potion-508800-r7'
+
+try:
+    ee.Initialize(project=PROJECT)
+    print('GEE 연결:', ee.Number(1).getInfo())
+except Exception:
+    ee.Authenticate()
+    ee.Initialize(project=PROJECT)
+    print('GEE 연결:', ee.Number(1).getInfo())
+
+# ============================================================
+# 2. 연구구역 및 조건
+# ============================================================
+
+roi = ee.Geometry.Rectangle([
+    128.9021, 35.1386,
+    128.9196, 35.1581
+])
+
+work_roi = roi.buffer(400)
+
+CRS = 'EPSG:32652'
+SCALE = 30
+
+DISTANCES = [30, 60, 90, 120, 150]
+
+PERIODS = [
+    ('2016-2017', 2016, 2017),
+    ('2024-2025', 2024, 2025)
+]
+
+GREEN_THRESHOLD = 0.20
+WATER_THRESHOLD = 0.0
+CLOUD_LIMIT = 20
+
+# ============================================================
+# 3. Landsat 전처리
+# ============================================================
+
+def preprocess(image):
+
+    image = ee.Image(image)
+
+    qa = image.select('QA_PIXEL')
+
+    cloud_mask = qa.bitwiseAnd(63).eq(0)
+
+    saturation_mask = (
+        image.select('QA_RADSAT').eq(0)
+    )
+
+    # 표면반사도
+    optical = (
+        image.select([
+            'SR_B3', 'SR_B4',
+            'SR_B5', 'SR_B6'
+        ])
+        .multiply(0.0000275)
+        .add(-0.2)
+    )
+
+    green_band = optical.select('SR_B3')
+    red = optical.select('SR_B4')
+    nir = optical.select('SR_B5')
+    swir = optical.select('SR_B6')
+
+    # NDVI
+    ndvi = (
+        nir.subtract(red)
+        .divide(nir.add(red))
+        .rename('NDVI')
+    )
+
+    # MNDWI
+    mndwi = (
+        green_band.subtract(swir)
+        .divide(green_band.add(swir))
+        .rename('MNDWI')
+    )
+
+    # 지표면온도 (섭씨)
+    lst = (
+        image.select('ST_B10')
+        .multiply(0.00341802)
+        .add(149.0)
+        .subtract(273.15)
+        .rename('LST')
+    )
+
+    valid = (
+        ndvi.gte(-1)
+        .And(ndvi.lte(1))
+        .And(mndwi.gte(-1))
+        .And(mndwi.lte(1))
+    )
+
+    return ee.Image.cat([
+        ndvi, mndwi, lst
+    ]).updateMask(
+        cloud_mask
+        .And(saturation_mask)
+        .And(valid)
+    )
+
+# ============================================================
+# 4. Landsat 수집
+# ============================================================
+
+landsat = (
+    ee.ImageCollection(
+        'LANDSAT/LC08/C02/T1_L2'
+    )
+    .merge(
+        ee.ImageCollection(
+            'LANDSAT/LC09/C02/T1_L2'
+        )
+    )
+    .filterBounds(work_roi)
+    .filter(
+        ee.Filter.calendarRange(7, 8, 'month')
+    )
+    .filter(
+        ee.Filter.lte(
+            'CLOUD_COVER', CLOUD_LIMIT
+        )
+    )
+    .filter(
+        ee.Filter.eq(
+            'PROCESSING_LEVEL', 'L2SP'
+        )
+    )
+)
+
+def get_composite(y1, y2):
+
+    yearly = []
+
+    for year in [y1, y2]:
+
+        col = landsat.filter(
+            ee.Filter.calendarRange(
+                year, year, 'year'
+            )
+        )
+
+        count = col.size().getInfo()
+        print(f'{year}년 영상 수: {count}')
+
+        if count == 0:
+            raise ValueError(
+                f'{year}년 사용 가능한 영상 없음'
+            )
+
+        yearly.append(
+            ee.Image(col.map(preprocess).median())
+        )
+
+    return (
+        ee.ImageCollection.fromImages(yearly)
+        .mean()
+        .clip(work_roi)
+        .reproject(crs=CRS, scale=SCALE)
+    )
+
+# ============================================================
+# 5. 녹지 경계로부터 거리
+# ============================================================
+
+def make_distance(image):
+
+    image = ee.Image(image)
+
+    ndvi = image.select('NDVI')
+    mndwi = image.select('MNDWI')
+
+    # 기준 녹지
+    # 수역을 녹지로 분류하지 않도록 제외
+    vegetation = (
+        ndvi.gte(GREEN_THRESHOLD)
+        .And(mndwi.lt(WATER_THRESHOLD))
+    )
+
+    green_binary = (
+        vegetation
+        .unmask(0)
+        .toByte()
+        .reproject(crs=CRS, scale=SCALE)
+    )
+
+    # 가장 가까운 녹지 픽셀 중심까지 거리
+    center_distance = (
+        green_binary.fastDistanceTransform(
+            neighborhood=20,
+            units='pixels',
+            metric='squared_euclidean'
+        )
+        .sqrt()
+        .multiply(SCALE)
+    )
+
+    # 녹지 픽셀 경계까지 거리 근사
+    edge_distance = (
+        center_distance
+        .subtract(SCALE / 2)
+        .max(0)
+        .rename('Distance')
+    )
+
+    # 녹지 내부만 제거
+    # 수역은 나중에 별도로 제외
+    outside_green = vegetation.Not()
+
+    return edge_distance.updateMask(
+        outside_green.And(ndvi.mask())
+    )
+
+# ============================================================
+# 6. 거리별 평균온도 계산
+# ============================================================
+
+def analyze(image, period):
+
+    image = ee.Image(image)
+
+    lst = image.select('LST')
+    mndwi = image.select('MNDWI')
+
+    distance = make_distance(image)
+
+    # 원래 유효 픽셀
+    valid = (
+        lst.mask()
+        .And(mndwi.mask())
+        .And(distance.mask())
+    )
+
+    # 수역 제외 조건
+    # MNDWI >= 0이면 제외
+    non_water = mndwi.lt(WATER_THRESHOLD)
+
+    bands = []
+
+    for d in DISTANCES:
+
+        lower = d - 30
+
+        if d == 30:
+            ring = (
+                distance.gte(0)
+                .And(distance.lte(30))
+            )
+        else:
+            ring = (
+                distance.gt(lower)
+                .And(distance.lte(d))
+            )
+
+        # 수역 제외 전
+        raw_mask = ring.And(valid)
+
+        # 수역 제외 후
+        clean_mask = (
+            raw_mask.And(non_water)
+        )
+
+        # 수역에 해당하는 픽셀
+        water_mask = (
+            raw_mask.And(
+                mndwi.gte(WATER_THRESHOLD)
+            )
+        )
+
+        # 수역 제외 전 LST 합계
+        bands.append(
+            lst.updateMask(raw_mask)
+            .rename(f'RawSum_{d}')
+        )
+
+        # 수역 제외 전 픽셀 수
+        bands.append(
+            ee.Image.constant(1)
+            .updateMask(raw_mask)
+            .rename(f'RawN_{d}')
+        )
+
+        # 수역 제외 후 LST 합계
+        bands.append(
+            lst.updateMask(clean_mask)
+            .rename(f'CleanSum_{d}')
+        )
+
+        # 수역 제외 후 픽셀 수
+        bands.append(
+            ee.Image.constant(1)
+            .updateMask(clean_mask)
+            .rename(f'CleanN_{d}')
+        )
+
+        # 제외된 수역 픽셀 수
+        bands.append(
+            ee.Image.constant(1)
+            .updateMask(water_mask)
+            .rename(f'WaterN_{d}')
+        )
+
+    stats = (
+        ee.Image.cat(bands)
+        .reduceRegion(
+            reducer=ee.Reducer.sum(),
+            geometry=roi,
+            scale=SCALE,
+            crs=CRS,
+            maxPixels=1e9,
+            tileScale=4
+        )
+        .getInfo()
+    )
+
+    rows = []
+
+    for d in DISTANCES:
+
+        raw_n = stats.get(f'RawN_{d}') or 0
+        clean_n = stats.get(f'CleanN_{d}') or 0
+        water_n = stats.get(f'WaterN_{d}') or 0
+
+        raw_sum = stats.get(f'RawSum_{d}') or 0
+        clean_sum = stats.get(f'CleanSum_{d}') or 0
+
+        raw_mean = (
+            raw_sum / raw_n
+            if raw_n > 0 else np.nan
+        )
+
+        clean_mean = (
+            clean_sum / clean_n
+            if clean_n > 0 else np.nan
+        )
+
+        water_ratio = (
+            water_n / raw_n * 100
+            if raw_n > 0 else np.nan
+        )
+
+        rows.append({
+            'Period': period,
+            'Distance': d,
+            'Distance_Range': f'{d-30}-{d}m',
+            'Before_Water_Removal': raw_mean,
+            'After_Water_Removal': clean_mean,
+            'Total_Pixels': int(round(raw_n)),
+            'NonWater_Pixels': int(round(clean_n)),
+            'Excluded_Water_Pixels': int(round(water_n)),
+            'Water_Ratio_pct': water_ratio
+        })
+
+    return pd.DataFrame(rows)
+
+# ============================================================
+# 7. 개발 전후 실행
+# ============================================================
+
+results = []
+
+for period, y1, y2 in PERIODS:
+
+    print('\n분석 중:', period)
+
+    image = get_composite(y1, y2)
+
+    result = analyze(image, period)
+
+    results.append(result)
+
+df = pd.concat(
+    results,
+    ignore_index=True
+)
+
+# ============================================================
+# 8. 전체 결과표
+# ============================================================
+
+print('\n==================================')
+print('수역 제외 전후 거리별 LST 비교')
+print('==================================')
+
+display(df.round(3))
+
+# ============================================================
+# 9. 최종 평균온도표
+# ============================================================
+
+temperature_table = df.pivot(
+    index='Distance_Range',
+    columns='Period',
+    values='After_Water_Removal'
+)
+
+distance_labels = [
+    f'{d-30}-{d}m' for d in DISTANCES
+]
+
+temperature_table = temperature_table.reindex(
+    index=distance_labels,
+    columns=[p[0] for p in PERIODS]
+)
+
+print('\n수역 제외 후 평균 LST (°C)')
+
+display(temperature_table.round(2))
+
+# ============================================================
+# 10. 수역 제외 픽셀 수 및 비율
+# ============================================================
+
+print('\n거리별 제외 수역 비율 (%)')
+
+water_table = df.pivot(
+    index='Distance_Range',
+    columns='Period',
+    values='Water_Ratio_pct'
+).reindex(
+    index=distance_labels,
+    columns=[p[0] for p in PERIODS]
+)
+
+display(water_table.round(2))
+
+# ============================================================
+# 11. 최종 그래프
+# 개발 전후 좌우 비교
+# 수역 제외 후 온도만 표시
+# ============================================================
+
+fig, axes = plt.subplots(
+    1, 2,
+    figsize=(14, 5.5),
+    sharey=True
+)
+
+colors = {
+    '2016-2017': '#287d48',
+    '2024-2025': '#d95f02'
+}
+
+for ax, (period, _, _) in zip(axes, PERIODS):
+
+    data = df[
+        df['Period'] == period
+    ].sort_values('Distance')
+
+    ax.plot(
+        data['Distance'],
+        data['After_Water_Removal'],
+        marker='o',
+        linewidth=2.5,
+        markersize=8,
+        color=colors[period],
+        label='Water-excluded LST'
+    )
+
+    ax.set_title(
+        period,
+        fontsize=14,
+        fontweight='bold'
+    )
+
+    ax.set_xlabel(
+        'Distance from Green Boundary (m)'
+    )
+
+    ax.set_xticks(DISTANCES)
+
+    ax.grid(
+        True,
+        linestyle='--',
+        alpha=0.4
+    )
+
+    ax.legend()
+
+axes[0].set_ylabel(
+    'Mean LST excluding water (°C)'
+)
+
+fig.suptitle(
+    'LST by Distance from Green Boundary (MNDWI < 0)',
+    fontsize=15,
+    fontweight='bold'
+)
+
+plt.tight_layout()
+
+plt.savefig(
+    'Green_Distance_LST_NoWater.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+# ============================================================
+# 12. 수역 제거 전후 온도 변화량
+# ============================================================
+
+df['Removal_Effect'] = (
+    df['After_Water_Removal']
+    - df['Before_Water_Removal']
+)
+
+print('\n수역 제외에 따른 평균온도 변화 (°C)')
+
+display(
+    df[
+        [
+            'Period',
+            'Distance_Range',
+            'Before_Water_Removal',
+            'After_Water_Removal',
+            'Removal_Effect',
+            'Excluded_Water_Pixels',
+            'NonWater_Pixels'
+        ]
+    ].round(3)
+)
+
+# ============================================================
+# 13. 30m -> 150m 변화량
+# ============================================================
+
+change_rows = []
+
+for period, _, _ in PERIODS:
+
+    part = df[
+        df['Period'] == period
+    ].set_index('Distance')
+
+    if (
+        30 not in part.index
+        or 150 not in part.index
+    ):
+        continue
+
+    change_rows.append({
+        'Period': period,
+        'Before_Water_Removal': (
+            part.loc[150, 'Before_Water_Removal']
+            - part.loc[30, 'Before_Water_Removal']
+        ),
+        'After_Water_Removal': (
+            part.loc[150, 'After_Water_Removal']
+            - part.loc[30, 'After_Water_Removal']
+        )
+    })
+
+change_df = pd.DataFrame(change_rows)
+
+print('\n30m -> 150m 온도 변화량 (°C)')
+
+display(change_df.round(3))
+
+# ============================================================
+# 14. CSV 저장
+# ============================================================
+
+df.to_csv(
+    'Green_Distance_LST_NoWater_Full.csv',
+    index=False,
+    encoding='utf-8-sig'
+)
+
+temperature_table.to_csv(
+    'Green_Distance_LST_NoWater_Table.csv',
+    encoding='utf-8-sig'
+)
+
+water_table.to_csv(
+    'Green_Distance_Excluded_Water_Ratio.csv',
+    encoding='utf-8-sig'
+)
+
+change_df.to_csv(
+    'Green_Distance_NoWater_Change.csv',
+    index=False,
+    encoding='utf-8-sig'
+)
+
+print('\n======================================')
+print('수역 제외 거리별 LST 분석 완료')
+print('MNDWI >= 0인 픽셀 제외 완료')
+print('그래프 및 표 저장 완료')
+print('======================================')
 
