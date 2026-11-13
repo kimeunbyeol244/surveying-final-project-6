@@ -1,1 +1,7 @@
+roi, roi_big = init()
+dem = ee.Image('USGS/SRTMGL1_003')
+stats = dem.reduceRegion(
+    ee.Reducer.percentile([5, 50, 95]).combine(ee.Reducer.minMax(), sharedInputs=True),
+    roi, 30, maxPixels=1e9).getInfo()
+print(stats)
 
