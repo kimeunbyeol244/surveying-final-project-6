@@ -1,1 +1,16 @@
 
+def find_breakpoint(df, cands=range(60, 390, 30)):
+    best = None
+    for d0 in cands:
+        d = df.copy()
+        d['dist_cap'] = np.minimum(d['dist'], d0)
+        m = smf.ols('LST ~ dist_cap + NDBI_nb', d).fit()
+        if best is None or m.ssr < best[1]:
+            best = (d0, m.ssr, m.params['dist_cap'] * 100)
+    return best
+
+roi, roi_big = init()
+for label, (y0, y1) in {'2016-2017': (2016, 2017), '2024-2025': (2024, 2025)}.items():
+    df, n = sample_period(roi, roi_big, y0, y1, 20)
+    d0, _, slope = find_breakpoint(df)
+    print(f"{label}: 기울기가 꺾이는 거리 ≈ {d0} m, 그 안쪽 기울기 {slope:.2f} ℃/100m")
