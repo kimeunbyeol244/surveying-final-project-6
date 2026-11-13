@@ -1,1 +1,132 @@
 
+import ee
+import numpy as np
+import pandas as pd
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+EE_PROJECT = 'root-isotope-514006-t8'   # 본인 프로젝트 ID
+
+NW_CORNER = (35.1581, 128.9021)   # 5W52+6RX 부산광역시 (위도, 경도)
+SE_CORNER = (35.1386, 128.9196)
+
+MAX_D = 400     # 구역이 작아져서 600 -> 400
+BIN = 30
+NB_PX = 3
+CRS = 'EPSG:32652'
+
+def init():
+\try:
+\ee.Initialize(project=EE_PROJECT)
+\except Exception:
+\ee.Authenticate()
+\ee.Initialize(project=EE_PROJECT)
+\west, north = NW_CORNER[1], NW_CORNER[0]
+\east, south = SE_CORNER[1], SE_CORNER[0]
+\roi = ee.Geometry.Rectangle([west, south, east, north])   # [서, 남, 동, 북]
+\return roi, roi.buffer(1500)
+
+def prep(img):
+\qa = img.select('QA_PIXEL')
+\clear = qa.bitwiseAnd(0b11110).eq(0)
+\sr = img.select('SR_B.').multiply(0.0000275).add(-0.2)
+\lst = img.select('ST_B10').multiply(0.00341802).add(149.0).subtract(273.15).rename('LST')
+\ndbi = sr.normalizedDifference(['SR_B6', 'SR_B5']).rename('NDBI')
+\mndwi = sr.normalizedDifference(['SR_B3', 'SR_B6']).rename('MNDWI')
+\return ee.Image.cat([lst, ndbi, mndwi]).updateMask(clear)
+
+def get_collection(roi_big, y0, y1, cloud_max):
+\return (ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+.merge(ee.ImageCollection('LANDSAT/LC09/C02/T1_L2'))
+.filterBounds(roi_big)
+.filter(ee.Filter.calendarRange(y0, y1, 'year'))
+.filter(ee.Filter.calendarRange(7, 8, 'month'))
+.filter(ee.Filter.lte('CLOUD_COVER', cloud_max)))
+
+def sample_period(roi, roi_big, y0, y1, cloud_max, n=6000):
+\col = get_collection(roi_big, y0, y1, cloud_max)
+\n_scenes = col.size().getInfo()
+\if n_scenes == 0:
+\return pd.DataFrame(), 0
+\comp = col.map(prep).median()
+
+\water = comp.select('MNDWI').gt(0).selfMask()
+\river = water.connectedPixelCount(256, True).gte(256).unmask(0)
+
+\dist = (river.fastDistanceTransform(neighborhood=30, units='pixels', metric='squared_euclidean')
+.sqrt().multiply(30).rename('dist'))
+
+\ndbi_nb = (comp.select('NDBI')
+.reduceNeighborhood(ee.Reducer.mean(), ee.Kernel.circle(NB_PX, 'pixels'))
+.rename('NDBI_nb'))
+
+\img = ee.Image.cat([comp.select('LST'), dist, ndbi_nb, ee.Image.pixelLonLat()])
+\land = comp.select('MNDWI').lte(0)
+\img = img.updateMask(dist.gte(BIN).And(dist.lt(MAX_D)).And(land))
+
+\fc = img.sample(region=roi, projection=CRS, scale=30, numPixels=n, seed=7,
+\dropNulls=True).limit(5000)
+\rows = [f['properties'] for f in fc.getInfo()['features']]
+\return pd.DataFrame(rows), n_scenes
+
+def analyze(df, label):
+\df = df.copy()
+\df['bin'] = (np.floor(df['dist'] / BIN) * BIN).astype(int)
+# 구역이 작아져서 군집 블록을 약 150 m로 축소
+\block = (np.floor(df['longitude'] / 0.0015).astype(int).astype(str) + '_' +
+\np.floor(df['latitude'] / 0.00135).astype(int).astype(str))
+\groups = pd.factorize(block)[0]
+\print(f"  군집(블록) 수: {len(set(groups))}")
+
+\m0 = smf.ols('LST ~ dist', df).fit(cov_type='cluster', cov_kwds={'groups': groups})
+\m1 = smf.ols('LST ~ dist + NDBI_nb', df).fit(cov_type='cluster', cov_kwds={'groups': groups})
+
+\df['LST_adj'] = df['LST'] - m1.params['NDBI_nb'] * (df['NDBI_nb'] - df['NDBI_nb'].mean())
+
+\def per100(m):
+\ci = m.conf_int().loc['dist'] * 100
+\return f"{m.params['dist'] * 100:.3f} ℃ (95% CI {ci[0]:.3f} ~ {ci[1]:.3f})"
+
+\print(f"\n[{label}] 표본 {len(df)}개")
+\print("  거리 100m 증가당 LST 변화, 통제 전:", per100(m0))
+\print("  거리 100m 증가당 LST 변화, 통제 후:", per100(m1))
+\print(f"  NDBI_nb 계수: {m1.params['NDBI_nb']:.3f}")
+
+\curve = df.groupby('bin').agg(n=('LST', 'size'), LST=('LST', 'mean'),
+\LST_adj=('LST_adj', 'mean'),
+\NDBI=('NDBI_nb', 'mean'))
+\return df, curve
+
+def plot_curves(curves, title):
+\fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=True)
+\for ax, (label, c) in zip(axes, curves.items()):
+\c = c[c['n'] >= 8]
+\x = c.index + BIN / 2
+\ax.plot(x, c['LST'], 'o-', label='Raw LST')
+\ax.plot(x, c['LST_adj'], 's--', label='NDBI-adjusted LST')
+\ax.set_title(label)
+\ax.set_xlabel('Distance from river (m)')
+\ax.grid(alpha=0.3)
+\ax.legend()
+\axes[0].set_ylabel('Mean LST (°C)')
+\plt.suptitle(title)
+\plt.tight_layout()
+\plt.show()
+
+if name == 'main':
+\roi, roi_big = init()
+\periods = {'2016-2017 (before)': (2016, 2017), '2024-2025 (after)': (2024, 2025)}
+
+\for cloud_max in (20, 10):
+\curves = {}
+\for label, (y0, y1) in periods.items():
+\df, n_scenes = sample_period(roi, roi_big, y0, y1, cloud_max)
+\print(f"[{label}] 구름 {cloud_max}% 이하 장면 수: {n_scenes}, 표본 픽셀 수: {len(df)}")
+\if n_scenes == 0 or len(df) < 100:
+\print("  -> 장면 또는 표본이 부족해 건너뜁니다.")
+\continue
+\df, curve = analyze(df, f"{label}, cloud<={cloud_max}")
+\print(curve.round(3))
+\curves[label] = curve
+\if len(curves) == 2:
+\plot_curves(curves, f'LST by distance from river (cloud <= {cloud_max}%)')
