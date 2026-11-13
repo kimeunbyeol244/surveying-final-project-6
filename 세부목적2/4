@@ -1,1 +1,52 @@
 
+import requests, io
+from PIL import Image
+from matplotlib.patches import Patch
+
+roi, roi_big = init()
+CRS = 'EPSG:32652'
+
+def water_layers(y0, y1):
+    m = get_collection(roi_big, y0, y1, 20).map(prep).median().select('MNDWI')
+    valid = m.mask()
+    water = m.gt(0).unmask(0)
+    return water, valid
+
+w0, v0 = water_layers(2016, 2017)
+w1, v1 = water_layers(2024, 2025)
+valid = v0.And(v1)
+
+cat = (ee.Image(0)
+       .where(w0.And(w1), 1)
+       .where(w0.And(w1.Not()), 2)
+       .where(w0.Not().And(w1), 3)
+       .updateMask(valid))
+
+def thumb(img, palette, vmax):
+    url = img.getThumbURL({'min': 0, 'max': vmax, 'palette': palette,
+                           'dimensions': 220, 'region': roi, 'format': 'png'})
+    return Image.open(io.BytesIO(requests.get(url).content)).convert('RGBA')
+
+im0 = thumb(w0.updateMask(valid), ['e6e6e6', '0000ff'], 1)
+im1 = thumb(w1.updateMask(valid), ['e6e6e6', '0000ff'], 1)
+im2 = thumb(cat, ['e6e6e6', '0000ff', 'ff0000', 'ff9900'], 3)
+
+fig, axes = plt.subplots(1, 3, figsize=(11, 6))
+for ax, im, t in zip(axes, [im0, im1, im2],
+                     ['2016-2017 (before)', '2024-2025 (after)', 'Change']):
+    ax.imshow(im, interpolation='nearest'); ax.set_title(t); ax.axis('off')
+axes[2].legend(handles=[Patch(color='#0000ff', label='Water (both)'),
+                        Patch(color='#ff0000', label='Water loss'),
+                        Patch(color='#ff9900', label='Water gain'),
+                        Patch(color='#e6e6e6', label='Land')],
+               loc='lower center', bbox_to_anchor=(0.5, -0.12), ncol=2, frameon=False)
+plt.tight_layout()
+plt.show()
+
+def area_km2(w):
+    s = w.updateMask(valid).multiply(ee.Image.pixelArea()).reduceRegion(
+        reducer=ee.Reducer.sum(), geometry=roi, scale=30, crs=CRS, maxPixels=1e9)
+    return ee.Number(s.values().get(0)).divide(1e6).getInfo()
+
+a0, a1 = area_km2(w0), area_km2(w1)
+print(f"수체 면적 2016-2017: {a0:.2f} km², 2024-2025: {a1:.2f} km², 변화: {a1 - a0:+.2f} km²")
