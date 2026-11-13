@@ -1,0 +1,127 @@
+    d['GreenBin'] = pd.Categorical(d['GreenBin'], categories=DIST_LABELS, ordered=True)
+    if len(d) < 35 or d['GreenBin'].nunique() < 4:
+        return d.assign(AdjLST=np.nan), None
+    # Avoid exact singular design and prohibit presenting unstable regressions as measurements.
+    x = d[COVS].to_numpy(dtype=float)
+    if np.linalg.matrix_rank(np.column_stack([np.ones(len(x)), x])) < 5:
+        return d.assign(AdjLST=np.nan), None
+    try:
+        mod = smf.ols(FORMULA, data=d).fit(cov_type='HC3')
+        means = d[COVS].mean()
+        correction = sum(mod.params.get(v,0.0) * (d[v] - means[v]) for v in COVS)
+        d['AdjLST'] = d['LST'] - correction
+        return d, mod
+    except Exception as exc:
+        warnings.warn(f'Regression failed: {exc}')
+        return d.assign(AdjLST=np.nan), None
+
+records, bins_records, models = [], [], []
+for c in candidates:
+    for label, _, _ in PERIODS:
+        sub = all_samples.loc[within[c['Candidate']] & all_samples['Period'].eq(label)].copy()
+        if sub.empty:
+            continue
+        d, model = fit_adjust(sub)
+        groups = d.groupby('GreenBin', observed=False)
+        tab = groups.agg(N=('LST','size'), Raw_LST=('LST','mean'),
+                         Adjusted_LST=('AdjLST','mean'),
+                         Mean_NDVI=('NDVI','mean'), Mean_NDBI=('NDBI','mean'),
+                         Built_Proxy=('BuiltFrac','mean'),
+                         Mean_River_Distance=('RiverDist','mean')).reindex(DIST_LABELS)
+        for b, r in tab.iterrows():
+            bins_records.append({'Candidate':c['Candidate'], 'Period':label,
+                                 'Green_Distance_Bin_m':b, **r.to_dict()})
+        n_near = int(tab.loc['0-30','N']) if pd.notna(tab.loc['0-30','N']) else 0
+        n_far = int(tab.loc['120-150','N']) if pd.notna(tab.loc['120-150','N']) else 0
+        valid = (model is not None and n_near >= 5 and n_far >= 5 and
+                 pd.notna(tab.loc['0-30','Adjusted_LST']) and
+                 pd.notna(tab.loc['120-150','Adjusted_LST']))
+        raw_rise = (tab.loc['120-150','Raw_LST'] - tab.loc['0-30','Raw_LST']) if n_near and n_far else np.nan
+        adj_rise = (tab.loc['120-150','Adjusted_LST'] - tab.loc['0-30','Adjusted_LST']) if valid else np.nan
+        records.append({'Candidate':c['Candidate'], 'Period':label,
+                        'N_total':len(d), 'N_near':n_near, 'N_far':n_far,
+                        'Raw_Rise_C':raw_rise, 'Adjusted_Rise_C':adj_rise,
+                        'Eligible_For_Ranking':bool(valid),
+                        'Regression_R2':model.rsquared if model is not None else np.nan})
+        if model is not None:
+            models.append({'Candidate':c['Candidate'], 'Period':label,
+                           **{f'coef_{k}':float(v) for k,v in model.params.items()}})
+
+bin_df = pd.DataFrame(bins_records)
+score_df = pd.DataFrame(records)
+model_df = pd.DataFrame(models)
+post = score_df[score_df['Period'] == '2024-2025'].copy()
+post['Ranking_Rise_C'] = np.where(post['Eligible_For_Ranking'],post['Adjusted_Rise_C'],np.nan)
+post = post.sort_values('Ranking_Rise_C', ascending=False, na_position='last').reset_index(drop=True)
+post['Rank'] = np.nan  # No ranking with only one observation window
+post.loc[post['Ranking_Rise_C'].isna(),'Rank'] = np.nan
+
+# Relative difference between periods in R23 (not necessarily identical land pixels).
+pre = score_df[score_df['Period']=='2016-2017'][['Candidate','Adjusted_Rise_C']].rename(columns={'Adjusted_Rise_C':'Pre_Rise_C'})
+post = post.merge(pre, on='Candidate', how='left')
+post['Post_minus_Pre_Rise_C'] = post['Adjusted_Rise_C'] - post['Pre_Rise_C']
+
+print('\n[R23 2024-2025 분석 요약: NDVI/NDBI/시가지피복/강거리 보정]')
+display(post.round(3))
+print('\n[R23 거리구간별 위성 측정치]')
+display(bin_df.round(3))
+print('\n[회귀모델 계수]')
+display(model_df.round(4))
+
+# R23 ONLY graph (post-period only).
+ranked = post.dropna(subset=['Ranking_Rise_C']).head(1)
+if not ranked.empty:
+    fig, axes = plt.subplots(1, len(ranked), figsize=(6*len(ranked), 4.8), squeeze=False)
+    for ax, (_, rankrow) in zip(axes[0],ranked.iterrows()):
+        t = bin_df[(bin_df['Candidate']==rankrow['Candidate']) &
+                   (bin_df['Period']=='2024-2025')].set_index('Green_Distance_Bin_m').reindex(DIST_LABELS)
+        xx = [15,45,75,105,135]
+        ax.plot(xx,t['Raw_LST'], marker='o', label='Observed')
+        ax.plot(xx,t['Adjusted_LST'], marker='s', label='Adjusted')
+        ax.set_title(f"{rankrow['Candidate']} | Adjusted rise={rankrow['Adjusted_Rise_C']:+.2f} C")
+        ax.set_xlabel('Distance from green (m)')
+        ax.set_ylabel('LST (C)')
+        ax.set_xticks(xx, DIST_LABELS)
+        ax.grid(alpha=.25)
+        ax.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTPUT_DIR,'R23_LST_distance.png'), dpi=200, bbox_inches='tight')
+    plt.show()
+else:
+    print('R23 has insufficient valid endpoint pixels or identifiable regression; adjusted rise is unavailable.')
+
+# Map candidate boxes and centers, using the provided research boundary.
+m = folium.Map(location=[(NW[0]+SE[0])/2,(NW[1]+SE[1])/2],
+               zoom_start=15, tiles='OpenStreetMap')
+folium.TileLayer(tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                 attr='Esri', name='Satellite', overlay=False).add_to(m)
+folium.Rectangle(bounds=[[SE[0],NW[1]],[NW[0],SE[1]]],
+                 color='yellow',weight=3,fill=False, tooltip='Original study ROI').add_to(m)
+for c in candidates:
+    folium.Rectangle(bounds=[[c['South'],c['West']],[c['North'],c['East']]],
+                     color='#25C9F5',weight=1, fill=False,
+                     tooltip=c['Candidate']).add_to(m)
+    folium.Marker([c['Center_Lat'],c['Center_Lon']],
+                  tooltip=f"{c['Candidate']}: {c['Center_Lat']}, {c['Center_Lon']}").add_to(m)
+mapfile = os.path.join(OUTPUT_DIR,'R23_observation_window_map.html')
+folium.LayerControl().add_to(m)
+m.save(mapfile)
+display(m)
+
+# Save full reproducible tables.
+xlsx = os.path.join(OUTPUT_DIR,'R23_distance_measurements.xlsx')
+with pd.ExcelWriter(xlsx, engine='openpyxl') as writer:
+    candidate_df.to_excel(writer, sheet_name='R23_Coordinates',index=False)
+    water_diag_df.to_excel(writer, sheet_name='Water_Exclusion', index=False)
+    post.to_excel(writer,sheet_name='R23_Post_Summary',index=False)
+    score_df.to_excel(writer,sheet_name='R23_Period_Scores',index=False)
+    bin_df.to_excel(writer,sheet_name='R23_Distance_Bins',index=False)
+    model_df.to_excel(writer,sheet_name='R23_Regression',index=False)
+print('\nSaved:',os.path.abspath(xlsx))
+print('Saved:',os.path.abspath(mapfile))
+print('Note: Water pixels are omitted, not temperature-corrected or filled in.')
+print('      Water mask: period MNDWI >= 0 OR JRC historical occurrence >=70%.')
+print('      River distance is to an algorithmically identified large/persistent water mask;')
+print('      built-up proxy is NOT ground-truth impervious surface fraction;')
+print('      results are observational associations, not causal cooling estimates.')
+
