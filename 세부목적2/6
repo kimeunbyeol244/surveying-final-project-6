@@ -1,1 +1,45 @@
+def sample_period(roi, roi_big, y0, y1, cloud_max, n=6000):
+    col = get_collection(roi_big, y0, y1, cloud_max)
+    n_scenes = col.size().getInfo()
+    if n_scenes == 0:
+        return pd.DataFrame(), 0
+    comp = col.map(prep).median()
+
+    water = comp.select('MNDWI').gt(0).selfMask()
+    river = water.connectedPixelCount(256, True).gte(256).unmask(0)
+
+    dist = (river.fastDistanceTransform(neighborhood=30, units='pixels', metric='squared_euclidean')
+            .sqrt().multiply(30).rename('dist'))
+
+    # 바뀐 부분: 물 픽셀(MNDWI > 0)을 제외하고 주변 평균 NDBI 계산
+    ndbi_nb = (comp.select('NDBI').updateMask(comp.select('MNDWI').lte(0))
+               .reduceNeighborhood(ee.Reducer.mean(), ee.Kernel.circle(NB_PX, 'pixels'))
+               .rename('NDBI_nb'))
+
+    img = ee.Image.cat([comp.select('LST'), dist, ndbi_nb, ee.Image.pixelLonLat()])
+    land = comp.select('MNDWI').lte(0)
+    img = img.updateMask(dist.gte(BIN).And(dist.lt(MAX_D)).And(land))
+
+    fc = img.sample(region=roi, projection=CRS, scale=30, numPixels=n, seed=7,
+                    dropNulls=True).limit(5000)
+    rows = [f['properties'] for f in fc.getInfo()['features']]
+    return pd.DataFrame(rows), n_scenes
+
+
+roi, roi_big = init()
+periods = {'2016-2017 (before)': (2016, 2017), '2024-2025 (after)': (2024, 2025)}
+curves = {}
+bp = {}
+for label, (y0, y1) in periods.items():
+    df, n_scenes = sample_period(roi, roi_big, y0, y1, 20)
+    print(f"[{label}] 장면 수: {n_scenes}, 표본 픽셀 수: {len(df)}")
+    df, curve = analyze(df, f"{label}, 물 제외 NDBI")
+    print(curve.round(3))
+    curves[label] = curve
+    d0, _, slope = find_breakpoint(df)
+    bp[label] = (d0, slope)
+
+plot_curves(curves, 'LST by distance from river (water-masked NDBI, cloud <= 20%)')
+for label, (d0, slope) in bp.items():
+    print(f"{label}: 기울기가 꺾이는 거리 ≈ {d0} m, 그 안쪽 기울기 {slope:.2f} ℃/100m")
 
