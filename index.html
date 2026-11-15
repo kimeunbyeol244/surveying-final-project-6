@@ -18,7 +18,7 @@ HTML
 
         /* 중앙 콘텐츠 영역 (흰색 배경) */
         .container {
-            max-width: 850px;
+            max-width: 900px;
             margin: 0 auto;
             background-color: #ffffff;
             padding: 50px 60px;
@@ -26,7 +26,153 @@ HTML
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        /* 제목 스타일 */
+        /* 최상단 타이틀 영역 */
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .demo-tag {
+            font-size: 0.85rem;
+            color: #868e96;
+            margin-bottom: 10px;
+        }
+
+        .main-title {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #212529;
+            line-height: 1.4;
+            margin-bottom: 15px;
+            word-break: keep-all;
+        }
+
+        .tag-group {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        /* 팀원별 역할 평가 박스 */
+        .evaluation-box {
+            background-color: #f1f3f5;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .evaluation-box h3 {
+            margin-top: 0;
+            font-size: 1.4rem;
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+
+        .eval-desc {
+            font-size: 0.95rem;
+            color: #495057;
+            margin-bottom: 20px;
+        }
+
+        details summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .eval-note {
+            font-size: 0.9rem;
+            color: #495057;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        /* 평가표 테이블 */
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background-color: transparent;
+        }
+
+        th, td {
+            border: 1px solid #ced4da;
+            padding: 10px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #e9ecef;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        td {
+            background-color: #f8f9fa;
+        }
+
+        .badge-leader {
+            display: inline-block;
+            border: 1px solid #adb5bd;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            margin-top: 4px;
+            color: #495057;
+        }
+
+        /* 버튼 그룹 */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #ced4da;
+        }
+
+        .btn-default {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+
+        .btn-primary {
+            background-color: #40524c;
+            color: white;
+            border: none;
+        }
+
+        .eval-footer {
+            font-size: 0.85rem;
+            color: #868e96;
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+
+        /* 안내 문구 박스 */
+        .notice-box {
+            border-left: 4px solid #b8a99a;
+            background-color: #fcfbf9;
+            padding: 15px 20px;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 40px;
+        }
+
+        /* 본문 제목 스타일 */
         h2 {
             font-size: 1.8rem;
             color: #2c3e50;
@@ -45,20 +191,20 @@ HTML
 
         p {
             margin-bottom: 1em;
-            text-align: justify; /* 양쪽 정렬로 글을 더 깔끔하게 만듭니다 */
+            text-align: justify;
         }
 
-       /* 인용구 스타일 (2. 연구 질문의 일상적 질문 부분) */
+        /* 인용구 스타일 (2. 연구 질문의 일상적 질문 부분 - 갈색 선 + 베이지 배경) */
         blockquote {
             margin: 1.5em 0;
             padding: 15px 20px;
             color: #333333;
-            background-color: #f4f1ea; /* 연한 베이지색 배경 */
-            border-left: 5px solid #d4c4a8; /* 굵은 갈색 세로선 추가 */
-            border-radius: 0 4px 4px 0; /* 오른쪽 모서리만 둥글게 처리 */
+            background-color: #f4f1ea;
+            border-left: 5px solid #d4c4a8;
+            border-radius: 0 4px 4px 0;
         }
 
-        /* 링크 스타일 */
+        /* 링크 및 기타 스타일 */
         a {
             color: #0366d6;
             text-decoration: none;
@@ -68,7 +214,6 @@ HTML
             text-decoration: underline;
         }
 
-        /* 하단 코드 블록 스타일 */
         pre {
             background-color: #f6f8fa;
             padding: 16px;
@@ -79,7 +224,6 @@ HTML
             color: #24292e;
         }
         
-        /* 주제어 등 굵은 글씨 강조 */
         strong {
             color: #2c3e50;
         }
@@ -89,6 +233,105 @@ HTML
 
     <div class="container">
 
+        <!-- 최상단 타이틀 영역 -->
+        <div class="page-header">
+            <div class="demo-tag">DEMO / 실제 관측 결과 아님</div>
+            <div class="main-title">부산 에코델타시티 개발 전후 열환경 변화에 기반한 신도시 개발 시사점</div>
+            <div class="tag-group">
+                <span>측량학 B</span>
+                <span>관측 기점 없음 - 합성자료</span>
+                <span>합성 분석, 실행 화면</span>
+            </div>
+        </div>
+
+        <!-- 팀원별 역할 평가 영역 -->
+        <div class="evaluation-box">
+            <h3>팀원별 역할 평가</h3>
+            <p class="eval-desc">조장이 팀원 5명의 역할별 참여 수준을 주도, 조력, 미참여로 평가합니다. 미평가는 미참여로 구분됩니다. 첫 번째 이름이 조장입니다. 각 역할의 주도는 최대 1명, 세부분석(코딩포함)의 주도는 최대 3명입니다.</p>
+            
+            <details open>
+                <summary>▶ 현재 게시된 평가표 보기</summary>
+                
+                <p class="eval-note">조장 입력표 - 아직 공개되지 않은 초안<br>각 칸을 눌러 참여 구분을 선택하세요.</p>
+                
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>이름</th>
+                                <th>연구배경<br>조사</th>
+                                <th>세부분석<br>(코딩포함)</th>
+                                <th>자료<br>조사</th>
+                                <th>회의준비<br>연락조정</th>
+                                <th>보고서<br>작성</th>
+                                <th>발표</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>조장 이름<br><span class="badge-leader">조장</span></td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                            </tr>
+                            <tr>
+                                <td>팀원 2</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                            </tr>
+                            <tr>
+                                <td>팀원 3</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                            </tr>
+                            <tr>
+                                <td>팀원 4</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                            </tr>
+                            <tr>
+                                <td>팀원 5</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                                <td>미평가</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-default">이 브라우저에 임시 저장</button>
+                    <button class="btn-primary">공개 반영용 파일 다운로드</button>
+                    <button class="btn-default">임시 입력 지우고 게시본 불러오기</button>
+                </div>
+                
+                <p class="eval-footer">임시 저장은 이 브라우저에만 남습니다. 공개 반영은 내려받은 team.json 으로 자기 조 저장소의 docs/_data/team.json 을 교체 커밋해야 합니다. 이름과 평가가 공개되며, 이 도구 자체에는 조장 인증 기능이 없습니다.</p>
+            </details>
+        </div>
+
+        <div class="notice-box">
+            교육용 합성자료에 기반한 학술 보고서 예제. 본문은 실제 도시 Landsat 관측 결과를 제시하지 않는다. 기본 탐색용 36개 표본과 세부목적 분석용 384행은 서로 다른 합성자료이다. 연구 질문을 학술적 목적으로 구체화하는 과정을 보여주기 위해 일상적 질문과 정식 목적 진술을 함께 제시하였다.
+        </div>
+
+        <!-- 기존 본문 내용 시작 -->
         <h2>초록</h2>
         <p>본 연구는 부산 에코델타시티를 대상으로 개발 전후 하절기의 지표면 온도(LST) 변화를 파악하고, 환경변수를 통제한 조건에서 수변 및 녹지의 거리별 냉각 효과를 산출하였다. Landsat 8·9 위성영상 분석 결과, 농경지가 시가지와 나지로 전환된 구역에서 뚜렷한 LST 상승이 나타났으며, 시가지화 지수(NDBI)와 LST 변화량 간에 강한 양의 선형관계(r=+0.805)가 확인되었다. NDBI를 통제한 낙동강 수변은 강에서 100m 멀어질 때 약 +0.4~0.6℃의 온도 상승 구배를 보였으며, 그 냉각 영향 범위는 수변으로부터 약 200m 안팎으로 도출되었다. 또한, 주변 환경변수(NDVI, NDBI 등)와 수체 영향을 배제한 내부 녹지 분석에서도 녹지 경계에서 100m 멀어질 때 보정 LST가 약 +0.464℃ 상승하는 선형 추세가 확인되었다. 본 연구는 향후 신도시 개발 과정에서 열환경 악화를 완화하기 위한 수변 및 녹지의 효과적인 공간 배치와 적정 이격 거리에 대한 실증적 시사점을 제공한다.</p>
         <p><strong>주제어:</strong> 부산 에코델타시티, 지표면 온도(LST), 시가지화 지수(NDBI), 정규식생지수(NDVI), 거리별 냉각 효과, 통제변수</p>
