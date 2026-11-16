@@ -41,7 +41,7 @@ badge: "연구보고서"
 </table>
 
 ### 1.2 개발은 열환경을 어떻게 바꾸나
-도시화 및 신도시 개발 과정은 필연적으로 대규모 토지피복 변화를 동반한다. 관련 선행 연구(Weng, 2001; Chen et al., 2006)에 따르면, 수분을 머금은 자연 식생 및 농경지가 아스팔트나 콘크리트 등 불투수성 인공 매질로 전환되는 현상은 도시 열섬(UHI) 강도를 증폭시키는 핵심 요인 중 하나로 지적된다. 태양 복사에너지를 흡수한 인공 피복이 열을 축적하고 방출하면서 지표면 온도가 비정상적으로 상승하기 때문이다. 따라서 농경지가 도시로 바뀌는 개발 구역에서는 열환경 악화를 최소화하기 위한 사전적 공간 계획이 요구된다.
+도시화 및 신도시 개발 과정은 필연적으로 대규모 토지피복 변화를 동반한다. 관련 선행 연구(Weng, 2001)에 따르면, 수분을 머금은 자연 식생 및 농경지가 아스팔트나 콘크리트 등 불투수성 인공 매질로 전환되는 현상은 도시 열섬(UHI) 강도를 증폭시키는 핵심 요인 중 하나로 지적된다. 태양 복사에너지를 흡수한 인공 피복이 열을 축적하고 방출하면서 지표면 온도가 비정상적으로 상승하기 때문이다. 따라서 농경지가 도시로 바뀌는 개발 구역에서는 열환경 악화를 최소화하기 위한 사전적 공간 계획이 요구된다.
 
 ### 1.3 수변·녹지는 완화 수단인데 무엇이 비어 있나
 열환경 완화를 위한 대표적인 도시계획 수단은 수변 공간과 녹지의 조성이다. 수변·녹지 주변의 온도가 낮다는 연구는 많지만, 냉각이 미치는 거리와 크기는 연구마다 다르고, 주변 토지피복과 시가지화 수준의 차이를 함께 고려한 연구는 상대적으로 적다. 따라서 실제 대규모 토지피복 변화가 일어나는 대상지에서 이를 직접 확인할 필요가 있다. 본 연구는 시가지화 수준 등 주변 환경 요인을 통제한 상태에서 수변·녹지로부터의 거리별 온도 차이 범위와 크기를 객관적 수치로 산출하고자 한다.
@@ -112,12 +112,6 @@ NDBI 통제 후 거리계수는 +0.596℃/100m였다.
 
 통계청. (2023). <em>2023 고령자 통계</em>.<br><br>
 
-환경부. (2023). <em>제4차 국가 기후위기 적응대책 (2024~2028)</em>. 환경부 정책자료. <a href="https://www.me.go.kr" target="_blank">https://www.me.go.kr</a><br><br>
-
-K-water(한국수자원공사). (연도미상). <em>부산 에코델타시티 조성사업 사업개요</em>. 에코델타시티 공식홈페이지. <a href="https://ecodeltacity.kwater.or.kr" target="_blank">https://ecodeltacity.kwater.or.kr</a><br><br>
-
-Chen, X. L., Zhao, H. M., Li, P. X., & Yin, Z. Y. (2006). Remote sensing image-based analysis of the relationship between urban heat island and land use/cover changes. <em>Remote Sensing of Environment</em>, 104(2), 133-146. <a href="https://doi.org/10.1016/j.rse.2005.11.016" target="_blank">https://doi.org/10.1016/j.rse.2005.11.016</a><br><br>
-
-Weng, Q. (2001). A remote sensing-GIS evaluation of urban expansion and its impact on surface temperature in the Zhujiang Delta, China. <em>International Journal of Remote Sensing</em>, 22(10), 1999-2014. <a href="https://doi.org/10.1080/01431160117006" target="_blank">https://doi.org/10.1080/01431160117006</a><br><br>
+Weng, Q. (2001). A remote sensing-GIS evaluation of urban expansion and its impact on surface temperature in the Zhujiang Delta, China. <em>International Journal of Remote Sensing</em>, 22, 1999-2014. - References - Scientific Research Publishing. <a href="https://www.scirp.org" target="_blank">https://www.scirp.org</a><br><br>
 
 </div>
