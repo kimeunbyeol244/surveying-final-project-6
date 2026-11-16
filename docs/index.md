@@ -112,6 +112,8 @@ NDBI 통제 후 거리계수는 +0.596℃/100m였다.
 
 통계청. (2023). <em>2023 고령자 통계</em>.<br><br>
 
+기후에너지환경부. (2023). <em>국가 기후위기 적극 대응 대책(제4차 국가 기후위기 적응대책) - 기후 상세 - 정책정보</em>. <a href="https://www.mcee.go.kr" target="_blank">https://www.mcee.go.kr</a><br><br>
+
 Weng, Q. (2001). A remote sensing-GIS evaluation of urban expansion and its impact on surface temperature in the Zhujiang Delta, China. <em>International Journal of Remote Sensing</em>, 22, 1999-2014. - References - Scientific Research Publishing. <a href="https://www.scirp.org" target="_blank">https://www.scirp.org</a><br><br>
 
 </div>
