@@ -108,7 +108,7 @@ NDBI 통제 후 거리계수는 +0.596℃/100m였다.
 
 질병관리청. (2024). <em>2023년 온열질환 응급실감시체계 운영 결과</em>. 주간 건강과 질병, 17(34). <a href="https://www.phwr.org/journal/view.html?doi=10.56786/PHWR.2024.17.34.1" target="_blank">https://doi.org/10.56786/PHWR.2024.17.34.1</a><br><br>
 
-통계청. (2023). <em>2023 고령자 통계</em>.<br><br>
+통계청. (2023). <em>2023 고령자 통계보고서pdf</em>.<br><br>
 
 기후에너지환경부. (2023). <em>국가 기후위기 적극 대응 대책(제4차 국가 기후위기 적응대책) - 기후 상세 - 정책정보</em>. <a href="https://www.mcee.go.kr" target="_blank">https://www.mcee.go.kr</a><br><br>
 
