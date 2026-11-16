@@ -24,7 +24,7 @@ badge: "연구보고서"
 <table align="center" style="border: none;">
   <tr>
     <td align="center" width="50%" style="border: none;">
-      <img src="figures/a.jpg" alt="8월 기온 시계열" width="100%">
+      <img src="figures/c.jpg" alt="8월 기온 시계열" width="100%">
     </td>
     <td align="center" width="50%" style="border: none;">
       <img src="figures/b.jpg" alt="고령인구 비중 추이" width="100%">
