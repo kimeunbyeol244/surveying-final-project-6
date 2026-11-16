@@ -97,3 +97,29 @@ NDBI 통제 후 거리계수는 +0.596℃/100m였다.
 ## 7. 토의
 
 ## 8. 결론
+
+<br>
+
+---
+
+## 연구 배경 참고문헌
+
+<div style="padding-left: 20px; text-indent: -20px; line-height: 1.8;">
+
+기상청. (2023). <em>기후분석정보 2023년 8월호</em>. <a href="https://www.kma.go.kr/download_02/ellinonewsletter_2023_08.pdf" target="_blank">https://www.kma.go.kr/download_02/ellinonewsletter_2023_08.pdf</a><br><br>
+
+부산광역시. (연도미상). <em>부산 에코델타시티 스마트시티 조성사업</em>. 부산광역시 공식 포털사이트. <a href="https://www.busan.go.kr" target="_blank">https://www.busan.go.kr</a><br><br>
+
+질병관리청. (2024). <em>2023년 온열질환 응급실감시체계 운영 결과</em>. 주간 건강과 질병, 17(34). <a href="https://www.phwr.org/journal/view.html?doi=10.56786/PHWR.2024.17.34.1" target="_blank">https://doi.org/10.56786/PHWR.2024.17.34.1</a><br><br>
+
+통계청. (2023). <em>2023 고령자 통계</em>.<br><br>
+
+환경부. (2023). <em>제4차 국가 기후위기 적응대책 (2024~2028)</em>. 환경부 정책자료. <a href="https://www.me.go.kr" target="_blank">https://www.me.go.kr</a><br><br>
+
+K-water(한국수자원공사). (연도미상). <em>부산 에코델타시티 조성사업 사업개요</em>. 에코델타시티 공식홈페이지. <a href="https://ecodeltacity.kwater.or.kr" target="_blank">https://ecodeltacity.kwater.or.kr</a><br><br>
+
+Chen, X. L., Zhao, H. M., Li, P. X., & Yin, Z. Y. (2006). Remote sensing image-based analysis of the relationship between urban heat island and land use/cover changes. <em>Remote Sensing of Environment</em>, 104(2), 133-146. <a href="https://doi.org/10.1016/j.rse.2005.11.016" target="_blank">https://doi.org/10.1016/j.rse.2005.11.016</a><br><br>
+
+Weng, Q. (2001). A remote sensing-GIS evaluation of urban expansion and its impact on surface temperature in the Zhujiang Delta, China. <em>International Journal of Remote Sensing</em>, 22(10), 1999-2014. <a href="https://doi.org/10.1080/01431160117006" target="_blank">https://doi.org/10.1080/01431160117006</a><br><br>
+
+</div>
