@@ -103,6 +103,18 @@ badge: "연구보고서"
 
 **필요성 및 평가 지표.** 녹지 인근의 지표온도 역시 거리뿐 아니라 주변의 건물 피복과 불투수면 비율에도 영향을 받는 것으로 보고되어 있어(Kirschner et al., 2024), 거리와 온도의 관계를 그대로 녹지의 냉각 효과로 해석할 수 없다. 따라서 주변 시가지 수준(NDBI)을 통제한 뒤에도 거리–온도 관계가 남는지 확인한다. 녹지(NDVI 0.20 이상)에 해당하는 픽셀은 거리띠에서 제외하고 녹지 바깥의 픽셀만 대상으로 삼는다. 녹지 경계로부터 30 m 간격 거리띠별 평균 LST와 유효 픽셀 수, 개별 픽셀의 거리–LST 산점도, NDBI 통제 전후의 거리계수(100 m당 LST 변화)와 95% 신뢰구간, 결정계수(R²), 가장 가까운 구간과 가장 먼 구간의 평균 LST 차이, 개발 전후 시기별 비교를 평가 지표로 사용한다.
 
+<table align="center" style="border: none;">
+  <tr>
+    <td align="center" width="85%" style="border: none;">
+      <img src="Figures/IMG_3482.jpeg" alt="연구 질문 및 세부목적 요약" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="border: none;">
+      <span style="font-size: 0.85em; color: gray;">그림 3. 연구 질문 및 세부목적 요약</span>
+    </td>
+  </tr>
+</table>
 
 
 
