@@ -106,7 +106,7 @@ badge: "연구보고서"
 <table align="center" style="border: none;">
   <tr>
     <td align="center" width="85%" style="border: none;">
-      <img src="Figures/IMG_3482.jpeg" alt="연구 질문 및 세부목적 요약" width="100%">
+      <img src="figures/IMG_3482.jpeg" alt="연구 질문 및 세부목적 요약" width="100%">
     </td>
   </tr>
   <tr>
@@ -115,6 +115,7 @@ badge: "연구보고서"
     </td>
   </tr>
 </table>
+
 
 
 
