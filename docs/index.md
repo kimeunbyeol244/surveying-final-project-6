@@ -173,23 +173,20 @@ Google Earth Engine(GEE)에서 연구지역의 경계를 설정하고, 2016, 201
 
 지표면반사도 변환. Landsat 광학 밴드의 원자료에는 보정계수가 적용되어 있지 않으므로, 제품에서 제공하는 스케일과 오프셋을 적용하여 지표면반사도로 변환한다.
 
-지표면반사도 = 원자료 값 × 0.0000275 − 0.2
+<img width="1448" height="1086" alt="지표면반사도 변환식 인포그래픽" src="https://github.com/user-attachments/assets/868bdd7e-11c8-4785-9557-389c106fc1eb" />
 
 이때 반사도는 지표면이 각 파장대의 빛을 얼마나 반사하는지 나타내는 값이며, NDVI·NDBI·MNDWI 계산에 사용한다.
 
 지표면온도 산출. Landsat Level-2의 ST_B10 밴드에 온도 보정계수를 적용하고, 켈빈(K) 단위를 섭씨온도(℃)로 변환한다.
 
-LST(℃) = ST_B10 × 0.00341802 + 149.0 − 273.15
+<img width="1448" height="1086" alt="LST 식" src="https://github.com/user-attachments/assets/259da595-499e-4972-9ed4-4aa518b6b989" />
 
 여기서 ST_B10은 Landsat의 지표면온도 원자료이며, 변환된 LST는 해당 위치의 지표면이 얼마나 뜨거운지를 나타낸다.
 
 분광지수 산출. 광학 밴드의 지표면반사도를 이용하여 NDVI, NDBI, MNDWI를 계산한다.
 
-NDVI = (NIR − Red) / (NIR + Red)
+<img width="1448" height="1086" alt="변수 세 개 식" src="https://github.com/user-attachments/assets/cbb3918c-be43-44e9-be3f-1b6d8f511c43" />
 
-NDBI = (SWIR1 − NIR) / (SWIR1 + NIR)
-
-MNDWI = (Green − SWIR1) / (Green + SWIR1)
 
 Red는 적색광, Green은 녹색광, NIR은 근적외선, SWIR1은 단파적외선 반사도이다. Landsat 8·9의 경우 Red에는 SR_B4, Green에는 SR_B3, NIR에는 SR_B5, SWIR1에는 SR_B6 밴드를 사용한다.
 
