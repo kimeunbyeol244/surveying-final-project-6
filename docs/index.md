@@ -136,12 +136,8 @@ https://github.com/kimeunbyeol244/surveying-final-project-6/blob/main/docs/index
 
 본 연구에서 사용하는 주요 자료는 다음과 같다.
 
-LST(지표면온도) : 개발 전후 및 거리별 온도 비교
-NDVI(정규식생지수) : 식생 상태 확인 및 녹지 추출
-NDBI(정규시가지화지수) : 시가지화 변화 확인 및 회귀분석 보정
-MNDWI(수역 판별 지수) : 낙동강 수역 추출 및 수면 제외
-Dynamic World V1 : 토지피복 유형 구분
-JRC 지표수 자료 : 과거 수역 출현 빈도 확인
+<img width="1774" height="887" alt="주요 사용 자료" src="https://github.com/user-attachments/assets/69a1ce1d-d529-4a25-8326-2a17551dcc85" />
+
 
 LST는 지표면의 온도를 나타내며, 기상관측소에서 측정하는 기온과는 구분된다. NDVI는 식생의 상태를, NDBI는 시가지화와 관련된 지표 특성을 나타낸다.
 
