@@ -155,7 +155,7 @@ JRC 지표수 자료는 장기간의 위성 관측을 통해 특정 위치에서
 
 본 연구에서는 녹지 주변의 지표온도를 비교할 때 과거에 수면이 자주 존재했던 지역을 확인하고 제외하기 위해 사용한다. 이를 통해 녹지의 온도 특성을 살펴보는 과정에서 강이나 기타 수역의 영향이 혼합되는 것을 줄이고자 한다.
 
-<img width="1050" height="525" alt="4 2_사용자료_선정이유_표" src="https://github.com/user-attachments/assets/c50e8d71-8790-420c-8b31-a1f1a57b8b8d" />
+<img width="1448" height="1086" alt="사용 자료와 활용 목적 인포그래픽" src="https://github.com/user-attachments/assets/deea8847-3f30-48d6-bf3f-e5bf105fdc2c" />
 
 ### 4.3 분석 자료의 구성
 
