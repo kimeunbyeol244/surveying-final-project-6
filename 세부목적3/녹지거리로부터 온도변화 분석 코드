@@ -1,127 +1,732 @@
-    d['GreenBin'] = pd.Categorical(d['GreenBin'], categories=DIST_LABELS, ordered=True)
-    if len(d) < 35 or d['GreenBin'].nunique() < 4:
-        return d.assign(AdjLST=np.nan), None
-    # Avoid exact singular design and prohibit presenting unstable regressions as measurements.
-    x = d[COVS].to_numpy(dtype=float)
-    if np.linalg.matrix_rank(np.column_stack([np.ones(len(x)), x])) < 5:
-        return d.assign(AdjLST=np.nan), None
+# ==============================================================
+# 부산 에코델타시티 R23 녹지 경계 거리별 LST 분석
+# 2016-2017 vs 2024-2025
+#
+# NDVI >= 0.20 : 녹지 픽셀만 제외
+# MNDWI >= 0   : 수역 픽셀 제외하지 않음
+# NDBI         : 회귀분석 통제
+# LST          : 종속변수
+# ==============================================================
+
+import ee
+import numpy as np
+import pandas as pd
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# --------------------------------------------------------------
+# 1. 기본 설정
+# --------------------------------------------------------------
+EE_PROJECT = 'glass-potion-508800-r7'
+
+NW_CORNER = (35.1581, 128.9021)
+SE_CORNER = (35.1386, 128.9196)
+
+CRS = 'EPSG:32652'
+SCALE = 30
+CLOUD_MAX = 20
+
+NDVI_LIMIT = 0.20
+
+MAX_D = 150
+BIN = 30
+MIN_BIN_N = 8
+
+PERIODS = {
+    '2016-2017': (2016, 2017),
+    '2024-2025': (2024, 2025)
+}
+
+
+# --------------------------------------------------------------
+# 2. Earth Engine 초기화
+# --------------------------------------------------------------
+try:
+    ee.Initialize(project=EE_PROJECT)
+except Exception:
+    ee.Authenticate()
+    ee.Initialize(project=EE_PROJECT)
+
+west = NW_CORNER[1]
+north = NW_CORNER[0]
+east = SE_CORNER[1]
+south = SE_CORNER[0]
+
+dlon = (east - west) / 3
+dlat = (north - south) / 3
+
+# R23 = 2행 3열
+r23_west = west + 2 * dlon
+r23_east = east
+r23_north = north - dlat
+r23_south = north - 2 * dlat
+
+roi = ee.Geometry.Rectangle(
+    [r23_west, r23_south, r23_east, r23_north],
+    proj='EPSG:4326',
+    geodesic=False
+)
+
+# R23 밖의 녹지도 거리 계산에 반영
+roi_big = roi.buffer(1000)
+
+print('R23 좌표')
+print('NW:', r23_north, r23_west)
+print('SE:', r23_south, r23_east)
+
+
+# --------------------------------------------------------------
+# 3. Landsat 영상 불러오기
+# --------------------------------------------------------------
+def get_collection(y0, y1):
+
+    l8 = ee.ImageCollection(
+        'LANDSAT/LC08/C02/T1_L2'
+    )
+
+    l9 = ee.ImageCollection(
+        'LANDSAT/LC09/C02/T1_L2'
+    )
+
+    return (
+        l8.merge(l9)
+        .filterBounds(roi_big)
+        .filter(ee.Filter.calendarRange(y0, y1, 'year'))
+        .filter(ee.Filter.calendarRange(7, 8, 'month'))
+        .filter(ee.Filter.eq('PROCESSING_LEVEL', 'L2SP'))
+        .filter(ee.Filter.lte('CLOUD_COVER', CLOUD_MAX))
+    )
+
+
+# --------------------------------------------------------------
+# 4. LST, NDVI, NDBI, MNDWI
+# --------------------------------------------------------------
+def prep(img):
+
+    qa = img.select('QA_PIXEL')
+
+    clear = qa.bitwiseAnd(0b11111).eq(0)
+    sat = img.select('QA_RADSAT').eq(0)
+
+    sr = (
+        img.select('SR_B.')
+        .multiply(0.0000275)
+        .add(-0.2)
+    )
+
+    lst = (
+        img.select('ST_B10')
+        .multiply(0.00341802)
+        .add(149.0)
+        .subtract(273.15)
+        .rename('LST')
+    )
+
+    ndvi = sr.normalizedDifference(
+        ['SR_B5', 'SR_B4']
+    ).rename('NDVI')
+
+    ndbi = sr.normalizedDifference(
+        ['SR_B6', 'SR_B5']
+    ).rename('NDBI')
+
+    mndwi = sr.normalizedDifference(
+        ['SR_B3', 'SR_B6']
+    ).rename('MNDWI')
+
+    return (
+        ee.Image.cat([
+            lst, ndvi, ndbi, mndwi
+        ])
+        .updateMask(clear.And(sat))
+    )
+
+
+# --------------------------------------------------------------
+# 5. 녹지 경계 거리 및 픽셀 추출
+# --------------------------------------------------------------
+def sample_period(y0, y1):
+
+    col = get_collection(y0, y1)
+    n_scenes = col.size().getInfo()
+
+    if n_scenes == 0:
+        return pd.DataFrame(), 0
+
+    comp = col.map(prep).median()
+
+    ndvi = comp.select('NDVI')
+
+    # ----------------------------------------------------------
+    # 5-1. 녹지 픽셀 정의
+    # ----------------------------------------------------------
+    green = ndvi.gte(NDVI_LIMIT)
+
+    # 녹지 픽셀만 제외
+    # 수역 픽셀은 별도로 제거하지 않음
+    analysis_mask = green.Not()
+
+    # ----------------------------------------------------------
+    # 5-2. 녹지 경계 거리 계산
+    # ----------------------------------------------------------
+    # 수역 마스크는 적용하지 않음
+    green_source = (
+        green
+        .unmask(0)
+        .reproject(crs=CRS, scale=SCALE)
+    )
+
+    dist = (
+        green_source.fastDistanceTransform(
+            neighborhood=30,
+            units='pixels',
+            metric='squared_euclidean'
+        )
+        .sqrt()
+        .multiply(SCALE)
+        .subtract(SCALE / 2)
+        .max(0)
+        .rename('dist')
+    )
+
+    # 공간 블록 계산을 위한 좌표
+    xy = ee.Image.pixelCoordinates(
+        ee.Projection(CRS).atScale(SCALE)
+    )
+
+    # ----------------------------------------------------------
+    # 5-3. 분석 영상 구성
+    # ----------------------------------------------------------
+    img = ee.Image.cat([
+        comp.select('LST'),
+        comp.select('NDBI'),
+        dist,
+        xy
+    ])
+
+    mask = (
+        analysis_mask
+        .And(dist.gte(0))
+        .And(dist.lt(MAX_D))
+    )
+
+    img = img.updateMask(mask)
+
+    # R23 영역만 추출
+    fc = img.sample(
+        region=roi,
+        projection=CRS,
+        scale=SCALE,
+        dropNulls=True,
+        geometries=False,
+        tileScale=4
+    )
+
+    rows = [
+        f['properties']
+        for f in fc.getInfo()['features']
+    ]
+
+    return pd.DataFrame(rows), n_scenes
+
+
+# --------------------------------------------------------------
+# 6. NDBI 보정 및 거리별 LST 분석
+# --------------------------------------------------------------
+def analyze(df, label, ref_ndbi):
+
+    df = df.copy()
+
+    # 거리 구간 설정
+    df['bin'] = (
+        np.floor(df['dist'] / BIN) * BIN
+    ).astype(int)
+
+    # 그래프 X축: 구간 상한
+    df['distance_plot'] = df['bin'] + BIN
+
+    # 약 150m 공간 블록
+    block = (
+        np.floor(df['x'] / 5)
+        .astype(int).astype(str)
+        + '_'
+        + np.floor(df['y'] / 5)
+        .astype(int).astype(str)
+    )
+
+    groups = pd.factorize(block)[0]
+    n_blocks = len(np.unique(groups))
+
+    # NDBI 통제 전
+    m0 = smf.ols(
+        'LST ~ dist',
+        data=df
+    ).fit()
+
+    # NDBI 통제 후
+    m1 = smf.ols(
+        'LST ~ dist + NDBI',
+        data=df
+    ).fit()
+
+    if m1.model.rank < 3:
+        raise ValueError(
+            '거리와 NDBI의 독립적인 변동이 부족합니다.'
+        )
+
+    # 공간 블록이 2개 이상일 때 군집 표준오차
+    if n_blocks >= 2:
+
+        m0 = smf.ols(
+            'LST ~ dist',
+            data=df
+        ).fit(
+            cov_type='cluster',
+            cov_kwds={'groups': groups}
+        )
+
+        m1 = smf.ols(
+            'LST ~ dist + NDBI',
+            data=df
+        ).fit(
+            cov_type='cluster',
+            cov_kwds={'groups': groups}
+        )
+
+    # ----------------------------------------------------------
+    # 6-1. 공통 NDBI 기준으로 LST 보정
+    # ----------------------------------------------------------
+    df['LST_adj'] = (
+        df['LST']
+        - m1.params['NDBI']
+        * (df['NDBI'] - ref_ndbi)
+    )
+
+    def per100(m):
+
+        ci = m.conf_int().loc['dist'] * 100
+
+        return (
+            f"{m.params['dist'] * 100:+.3f} ℃/100m "
+            f"(95% CI "
+            f"{ci.iloc[0]:+.3f} ~ "
+            f"{ci.iloc[1]:+.3f})"
+        )
+
+    print(f'\n[{label}]')
+    print('유효 픽셀:', len(df))
+    print('공간 블록:', n_blocks)
+
+    print('NDBI 통제 전:', per100(m0))
+    print('NDBI 통제 후:', per100(m1))
+    print(
+        'NDBI 회귀계수:',
+        round(m1.params['NDBI'], 4)
+    )
+
+    # ----------------------------------------------------------
+    # 6-2. 거리별 평균
+    # ----------------------------------------------------------
+    curve = df.groupby('bin').agg(
+        n=('LST', 'size'),
+        LST=('LST', 'mean'),
+        LST_adj=('LST_adj', 'mean'),
+        NDBI=('NDBI', 'mean')
+    )
+
+    curve = curve.reindex(
+        np.arange(0, MAX_D, BIN)
+    )
+
+    curve['n'] = (
+        curve['n']
+        .fillna(0)
+        .astype(int)
+    )
+
+    curve['distance_plot'] = (
+        curve.index + BIN
+    )
+
+    print('\n거리별 평균 LST')
+    print(curve.round(3))
+
+    return df, curve, m0, m1
+
+
+# --------------------------------------------------------------
+# 7. 개발 전후 픽셀 수집
+# --------------------------------------------------------------
+samples = {}
+scene_counts = {}
+
+for label, (y0, y1) in PERIODS.items():
+
+    df, n_scenes = sample_period(y0, y1)
+
+    samples[label] = df
+    scene_counts[label] = n_scenes
+
+    print(
+        f'{label}: '
+        f'장면 {n_scenes}개, '
+        f'유효 픽셀 {len(df)}개'
+    )
+
+
+# --------------------------------------------------------------
+# 8. 공통 NDBI 기준 계산
+# --------------------------------------------------------------
+valid_samples = [
+    df for df in samples.values()
+    if len(df) > 0
+]
+
+if len(valid_samples) == 0:
+    raise ValueError(
+        'R23에서 유효 픽셀이 없습니다.'
+    )
+
+combined = pd.concat(
+    valid_samples,
+    ignore_index=True
+)
+
+ref_ndbi = combined['NDBI'].mean()
+
+print(
+    '\n공통 기준 NDBI:',
+    round(ref_ndbi, 4)
+)
+
+
+# --------------------------------------------------------------
+# 9. 각 기간별 회귀분석
+# --------------------------------------------------------------
+curves = {}
+models = {}
+
+for label, df in samples.items():
+
+    if len(df) < 30:
+
+        print(
+            f'{label}: '
+            '표본 부족으로 회귀분석 생략'
+        )
+
+        continue
+
     try:
-        mod = smf.ols(FORMULA, data=d).fit(cov_type='HC3')
-        means = d[COVS].mean()
-        correction = sum(mod.params.get(v,0.0) * (d[v] - means[v]) for v in COVS)
-        d['AdjLST'] = d['LST'] - correction
-        return d, mod
-    except Exception as exc:
-        warnings.warn(f'Regression failed: {exc}')
-        return d.assign(AdjLST=np.nan), None
 
-records, bins_records, models = [], [], []
-for c in candidates:
-    for label, _, _ in PERIODS:
-        sub = all_samples.loc[within[c['Candidate']] & all_samples['Period'].eq(label)].copy()
-        if sub.empty:
-            continue
-        d, model = fit_adjust(sub)
-        groups = d.groupby('GreenBin', observed=False)
-        tab = groups.agg(N=('LST','size'), Raw_LST=('LST','mean'),
-                         Adjusted_LST=('AdjLST','mean'),
-                         Mean_NDVI=('NDVI','mean'), Mean_NDBI=('NDBI','mean'),
-                         Built_Proxy=('BuiltFrac','mean'),
-                         Mean_River_Distance=('RiverDist','mean')).reindex(DIST_LABELS)
-        for b, r in tab.iterrows():
-            bins_records.append({'Candidate':c['Candidate'], 'Period':label,
-                                 'Green_Distance_Bin_m':b, **r.to_dict()})
-        n_near = int(tab.loc['0-30','N']) if pd.notna(tab.loc['0-30','N']) else 0
-        n_far = int(tab.loc['120-150','N']) if pd.notna(tab.loc['120-150','N']) else 0
-        valid = (model is not None and n_near >= 5 and n_far >= 5 and
-                 pd.notna(tab.loc['0-30','Adjusted_LST']) and
-                 pd.notna(tab.loc['120-150','Adjusted_LST']))
-        raw_rise = (tab.loc['120-150','Raw_LST'] - tab.loc['0-30','Raw_LST']) if n_near and n_far else np.nan
-        adj_rise = (tab.loc['120-150','Adjusted_LST'] - tab.loc['0-30','Adjusted_LST']) if valid else np.nan
-        records.append({'Candidate':c['Candidate'], 'Period':label,
-                        'N_total':len(d), 'N_near':n_near, 'N_far':n_far,
-                        'Raw_Rise_C':raw_rise, 'Adjusted_Rise_C':adj_rise,
-                        'Eligible_For_Ranking':bool(valid),
-                        'Regression_R2':model.rsquared if model is not None else np.nan})
-        if model is not None:
-            models.append({'Candidate':c['Candidate'], 'Period':label,
-                           **{f'coef_{k}':float(v) for k,v in model.params.items()}})
+        df, curve, m0, m1 = analyze(
+            df,
+            label,
+            ref_ndbi
+        )
 
-bin_df = pd.DataFrame(bins_records)
-score_df = pd.DataFrame(records)
-model_df = pd.DataFrame(models)
-post = score_df[score_df['Period'] == '2024-2025'].copy()
-post['Ranking_Rise_C'] = np.where(post['Eligible_For_Ranking'],post['Adjusted_Rise_C'],np.nan)
-post = post.sort_values('Ranking_Rise_C', ascending=False, na_position='last').reset_index(drop=True)
-post['Rank'] = np.nan  # No ranking with only one observation window
-post.loc[post['Ranking_Rise_C'].isna(),'Rank'] = np.nan
+        samples[label] = df
+        curves[label] = curve
 
-# Relative difference between periods in R23 (not necessarily identical land pixels).
-pre = score_df[score_df['Period']=='2016-2017'][['Candidate','Adjusted_Rise_C']].rename(columns={'Adjusted_Rise_C':'Pre_Rise_C'})
-post = post.merge(pre, on='Candidate', how='left')
-post['Post_minus_Pre_Rise_C'] = post['Adjusted_Rise_C'] - post['Pre_Rise_C']
+        models[label] = {
+            'raw': m0,
+            'adjusted': m1
+        }
 
-print('\n[R23 2024-2025 분석 요약: NDVI/NDBI/시가지피복/강거리 보정]')
-display(post.round(3))
-print('\n[R23 거리구간별 위성 측정치]')
-display(bin_df.round(3))
-print('\n[회귀모델 계수]')
-display(model_df.round(4))
+        curve.to_csv(
+            f'R23_{label}_green_only_mask.csv',
+            encoding='utf-8-sig'
+        )
 
-# R23 ONLY graph (post-period only).
-ranked = post.dropna(subset=['Ranking_Rise_C']).head(1)
-if not ranked.empty:
-    fig, axes = plt.subplots(1, len(ranked), figsize=(6*len(ranked), 4.8), squeeze=False)
-    for ax, (_, rankrow) in zip(axes[0],ranked.iterrows()):
-        t = bin_df[(bin_df['Candidate']==rankrow['Candidate']) &
-                   (bin_df['Period']=='2024-2025')].set_index('Green_Distance_Bin_m').reindex(DIST_LABELS)
-        xx = [15,45,75,105,135]
-        ax.plot(xx,t['Raw_LST'], marker='o', label='Observed')
-        ax.plot(xx,t['Adjusted_LST'], marker='s', label='Adjusted')
-        ax.set_title(f"{rankrow['Candidate']} | Adjusted rise={rankrow['Adjusted_Rise_C']:+.2f} C")
-        ax.set_xlabel('Distance from green (m)')
-        ax.set_ylabel('LST (C)')
-        ax.set_xticks(xx, DIST_LABELS)
-        ax.grid(alpha=.25)
-        ax.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR,'R23_LST_distance.png'), dpi=200, bbox_inches='tight')
-    plt.show()
+    except ValueError as e:
+        print(f'{label}: {e}')
+
+
+# --------------------------------------------------------------
+# 10. 거리별 평균 LST 그래프
+# --------------------------------------------------------------
+plt.figure(figsize=(9, 5.5))
+
+colors = {
+    '2016-2017': 'tab:blue',
+    '2024-2025': 'tab:orange'
+}
+
+for label, curve in curves.items():
+
+    c = curve.copy()
+
+    c.loc[
+        c['n'] < MIN_BIN_N,
+        ['LST', 'LST_adj']
+    ] = np.nan
+
+    x = c['distance_plot']
+
+    plt.plot(
+        x,
+        c['LST'],
+        'o--',
+        color=colors[label],
+        alpha=0.4,
+        label=f'{label} Raw'
+    )
+
+    plt.plot(
+        x,
+        c['LST_adj'],
+        's-',
+        color=colors[label],
+        linewidth=2,
+        label=f'{label} NDBI-adjusted'
+    )
+
+plt.title(
+    'R23 - Green Boundary Distance vs LST'
+)
+
+plt.xlabel(
+    'Distance bin upper bound (m)'
+)
+
+plt.ylabel(
+    'Mean LST (°C)'
+)
+
+plt.xticks(
+    np.arange(30, MAX_D + 1, BIN)
+)
+
+plt.grid(alpha=0.3)
+
+if len(curves) > 0:
+    plt.legend()
 else:
-    print('R23 has insufficient valid endpoint pixels or identifiable regression; adjusted rise is unavailable.')
+    plt.text(
+        0.5, 0.5,
+        'Insufficient data',
+        transform=plt.gca().transAxes,
+        ha='center',
+        va='center'
+    )
 
-# Map candidate boxes and centers, using the provided research boundary.
-m = folium.Map(location=[(NW[0]+SE[0])/2,(NW[1]+SE[1])/2],
-               zoom_start=15, tiles='OpenStreetMap')
-folium.TileLayer(tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                 attr='Esri', name='Satellite', overlay=False).add_to(m)
-folium.Rectangle(bounds=[[SE[0],NW[1]],[NW[0],SE[1]]],
-                 color='yellow',weight=3,fill=False, tooltip='Original study ROI').add_to(m)
-for c in candidates:
-    folium.Rectangle(bounds=[[c['South'],c['West']],[c['North'],c['East']]],
-                     color='#25C9F5',weight=1, fill=False,
-                     tooltip=c['Candidate']).add_to(m)
-    folium.Marker([c['Center_Lat'],c['Center_Lon']],
-                  tooltip=f"{c['Candidate']}: {c['Center_Lat']}, {c['Center_Lon']}").add_to(m)
-mapfile = os.path.join(OUTPUT_DIR,'R23_observation_window_map.html')
-folium.LayerControl().add_to(m)
-m.save(mapfile)
-display(m)
+plt.tight_layout()
 
-# Save full reproducible tables.
-xlsx = os.path.join(OUTPUT_DIR,'R23_distance_measurements.xlsx')
-with pd.ExcelWriter(xlsx, engine='openpyxl') as writer:
-    candidate_df.to_excel(writer, sheet_name='R23_Coordinates',index=False)
-    water_diag_df.to_excel(writer, sheet_name='Water_Exclusion', index=False)
-    post.to_excel(writer,sheet_name='R23_Post_Summary',index=False)
-    score_df.to_excel(writer,sheet_name='R23_Period_Scores',index=False)
-    bin_df.to_excel(writer,sheet_name='R23_Distance_Bins',index=False)
-    model_df.to_excel(writer,sheet_name='R23_Regression',index=False)
-print('\nSaved:',os.path.abspath(xlsx))
-print('Saved:',os.path.abspath(mapfile))
-print('Note: Water pixels are omitted, not temperature-corrected or filled in.')
-print('      Water mask: period MNDWI >= 0 OR JRC historical occurrence >=70%.')
-print('      River distance is to an algorithmically identified large/persistent water mask;')
-print('      built-up proxy is NOT ground-truth impervious surface fraction;')
-print('      results are observational associations, not causal cooling estimates.')
+plt.savefig(
+    'R23_green_only_LST_comparison.png',
+    dpi=200,
+    bbox_inches='tight'
+)
 
+plt.show()
+
+
+# --------------------------------------------------------------
+# 11. NDBI 보정 후 평균 LST 그래프
+# --------------------------------------------------------------
+plt.figure(figsize=(8, 5))
+
+for label, curve in curves.items():
+
+    c = curve.copy()
+
+    c.loc[
+        c['n'] < MIN_BIN_N,
+        'LST_adj'
+    ] = np.nan
+
+    x = c['distance_plot']
+
+    plt.plot(
+        x,
+        c['LST_adj'],
+        'o-',
+        linewidth=2,
+        color=colors[label],
+        label=label
+    )
+
+plt.title(
+    'R23 - NDBI-adjusted LST'
+)
+
+plt.xlabel(
+    'Distance bin upper bound (m)'
+)
+
+plt.ylabel(
+    'Adjusted mean LST (°C)'
+)
+
+plt.xticks(
+    np.arange(30, MAX_D + 1, BIN)
+)
+
+plt.grid(alpha=0.3)
+
+if len(curves) > 0:
+    plt.legend()
+
+plt.tight_layout()
+
+plt.savefig(
+    'R23_green_only_adjusted_LST.png',
+    dpi=200,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+
+# --------------------------------------------------------------
+# 12. NDBI 보정 전후 산점도
+# --------------------------------------------------------------
+fig, axes = plt.subplots(
+    2, 2,
+    figsize=(13, 10),
+    sharex=True
+)
+
+for i, label in enumerate(PERIODS):
+
+    df = samples.get(label)
+
+    if df is None or 'LST_adj' not in df.columns:
+
+        for j in range(2):
+            axes[i, j].text(
+                0.5, 0.5,
+                'Insufficient data',
+                transform=axes[i, j].transAxes,
+                ha='center',
+                va='center'
+            )
+
+        continue
+
+    df = df.copy()
+
+    # 실제 픽셀 거리를 사용한 회귀모형
+    m0 = models[label]['raw']
+    m1 = models[label]['adjusted']
+
+    # 보정 LST에 대한 단순 선형회귀
+    m_adj = smf.ols(
+        'LST_adj ~ dist',
+        data=df
+    ).fit()
+
+    x_line = np.linspace(
+        df['dist'].min(),
+        df['dist'].max(),
+        100
+    )
+
+    # ----------------------------------------------------------
+    # 왼쪽: NDBI 통제 전
+    # ----------------------------------------------------------
+    ax = axes[i, 0]
+
+    ax.scatter(
+        df['dist'],
+        df['LST'],
+        s=12,
+        alpha=0.22,
+        color='gray'
+    )
+
+    y_raw = (
+        m0.params['Intercept']
+        + m0.params['dist'] * x_line
+    )
+
+    ax.plot(
+        x_line,
+        y_raw,
+        color='red',
+        linewidth=2
+    )
+
+    ax.set_title(f'{label} - Raw LST')
+    ax.set_ylabel('LST (°C)')
+    ax.grid(alpha=0.25)
+
+    ax.text(
+        0.04, 0.95,
+        f"Slope = {m0.params['dist'] * 100:+.3f}"
+        " °C/100m\n"
+        f"R² = {m0.rsquared:.3f}",
+        transform=ax.transAxes,
+        va='top',
+        fontsize=10
+    )
+
+    # ----------------------------------------------------------
+    # 오른쪽: NDBI 통제 후
+    # ----------------------------------------------------------
+    ax = axes[i, 1]
+
+    ax.scatter(
+        df['dist'],
+        df['LST_adj'],
+        s=12,
+        alpha=0.25,
+        color='tab:blue'
+    )
+
+    y_adj = (
+        m_adj.params['Intercept']
+        + m_adj.params['dist'] * x_line
+    )
+
+    ax.plot(
+        x_line,
+        y_adj,
+        color='red',
+        linewidth=2
+    )
+
+    ax.set_title(
+        f'{label} - NDBI-adjusted LST'
+    )
+
+    ax.grid(alpha=0.25)
+
+    ax.text(
+        0.04, 0.95,
+        f"Slope = {m1.params['dist'] * 100:+.3f}"
+        " °C/100m\n"
+        f"R² = {m_adj.rsquared:.3f}",
+        transform=ax.transAxes,
+        va='top',
+        fontsize=10
+    )
+
+for ax in axes.flat:
+    ax.set_xlim(0, MAX_D)
+    ax.set_xticks(
+        np.arange(30, MAX_D + 1, BIN)
+    )
+
+for ax in axes[-1, :]:
+    ax.set_xlabel(
+        'Distance from green boundary (m)'
+    )
+
+plt.suptitle(
+    'R23 - Green Boundary Distance vs LST',
+    fontsize=15,
+    fontweight='bold'
+)
+
+plt.tight_layout()
+
+plt.savefig(
+    'R23_green_only_scatter.png',
+    dpi=250,
+    bbox_inches='tight'
+)
+
+plt.show()
+
+print('\nR23 분석 완료')
