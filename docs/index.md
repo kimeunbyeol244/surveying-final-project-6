@@ -205,7 +205,7 @@ MNDWI = (Green − SWIR1) / (Green + SWIR1)
 
 전처리된 영상은 개발 초기와 최근으로 구분하여 각각 합성하고, 동일한 위치를 비교할 수 있도록 공통 분석 격자에 맞춘다. 관측값이 없는 위치는 결측으로 처리하여 계산에서 제외한다.
 
-<img width="1050" height="575" alt="5 1_위성영상_지표산출_개념도" src="https://github.com/user-attachments/assets/dc7c4d70-4c95-49d2-9d51-f44ef4818cef" />
+<img width="1672" height="941" alt="위성영상 분석 지표 산출 과정" src="https://github.com/user-attachments/assets/b9b147f1-5e58-48b6-884b-cdc920af6cbb" />
 
 ### 5.2 세부목적 1 · 개발 전후 토지피복 및 지표온도 변화 비교
 
