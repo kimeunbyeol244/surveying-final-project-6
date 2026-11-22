@@ -215,7 +215,7 @@ MNDWI = (Green − SWIR1) / (Green + SWIR1)
 
 전환 유형별 픽셀 면적을 합산하여 토지피복 변화 면적(km²)을 계산하고, 각 유형에서 지표온도가 얼마나 달라졌는지 비교한다.
 
-<img width="1050" height="575" alt="5 2_NDBI_LST_회귀분석_개념도" src="https://github.com/user-attachments/assets/e73feb01-9fb4-46c9-81da-1ee98e11e169" />
+<img width="2916" height="1597" alt="01_픽셀별_토지피복_전환" src="https://github.com/user-attachments/assets/b980d120-e1ff-4068-bb20-138db0e07184" />
 
 지표온도 및 시가지화 변화량 산출. 동일한 위치에서 최근값과 초기값의 차이를 계산하여 지표온도 변화량(ΔLST)과 시가지화 지수 변화량(ΔNDBI)을 구한다.
 
