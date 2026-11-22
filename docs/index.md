@@ -193,6 +193,7 @@ Dynamic World V1의 토지피복 분류를 시가지, 나지, 녹지, 수면, �
 이때 α는 절편이고 β₁·β₂는 각각 거리와 주변 NDBI에 대한 회귀계수이다. 추정된 NDBI 계수로 개별 픽셀의 주변 NDBI를 표본 평균 수준으로 조정한 LST를 계산한 뒤, 보정 전·후의 거리별 평균온도를 비교한다.
 <p align="center"><strong>LST<sub>보정,i</sub> = LST<sub>관측,i</sub> − β<sub>2</sub> × (NDBI<sub>nb,i</sub> − 평균 NDBI<sub>nb</sub>)</strong></p><p align="center"><img src="figures/Fig_5-4_수변30m_주변90m_NDBI.png" width="760" alt="그림 5-4. 수변 30m 거리 구간과 반경 90m 주변 NDBI 계산 개념도"></p>
 그림 5-4. 수변 30m 거리 구간과 반경 90m 주변 NDBI 계산 개념도
+
 <p align="center"><img src="figures/Fig_5-5_수변거리_NDBI_보정원리.png" width="760" alt="그림 5-5. NDBI를 고려한 수변 거리 회귀보정 원리"></p>
 그림 5-5. NDBI를 고려한 수변 거리 회귀보정 원리
 
