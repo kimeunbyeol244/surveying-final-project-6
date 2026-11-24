@@ -224,7 +224,8 @@ NDBI만을 이용한 통계적 보정
 
 마지막으로 연구 경계와 분석 기간, 사용 위성영상의 촬영일 및 제품 식별자, 품질 마스크 기준, 영상 합성 방식, 지수 계산식, 거리 구간과 회귀모형 설정을 GEE 코드와 함께 기록하여 동일한 절차를 재현할 수 있도록 한다.
 
-## 6. 결과 {: #results}
+## 6. 결과
+{: #results}
 
 <style>
 .report-result-figure { display: block; width: 100%; margin: 24px auto; text-align: center !important; }
@@ -235,18 +236,68 @@ NDBI만을 이용한 통계적 보정
 
 ### 6.0 기초 탐색 분석
 
-개발 전(2016–2017년)과 개발 후(2024–2025년)의 7–8월 Landsat 영상은 각각 6장, Dynamic World V1 영상은 각각 7장과 26장이 확보되었다. 수변 및 녹지 거리별 분석에 사용된 Landsat 영상은 개발 전 2장, 개발 후 6장이었다.
+#### 6.0.1 개발 전후 토지피복 구성 변화
 
-전체 연구대상지 면적은 약 3.450km²이며, 개발 전후 공통 유효 LST 분석 면적은 3.224km²(93.46%)였다. 두 시기의 LST, NDBI, NDVI가 모두 유효한 공간 표본은 936개였다.
+Dynamic World V1의 평균 분류 확률을 5개 토지피복 유형으로 통합하고 최대 확률 0.35 이상인 픽셀을 분류하였다. 면적은 10m 격자에서 산출하였으며, 기준 미충족 또는 자료 결측 영역은 미분류로 표시하였다. 이 결과는 세부목적 1의 토지피복 전환 분석과 분류 조건이 다른 별도의 탐색 결과이다.
 
 <figure class="report-result-figure">
-  <img src="figures/EDC_basic_histogram.png" alt="개발 전후 LST, NDBI, NDVI 분포" width="900">
-  <figcaption>그림 6-1. 개발 전후 LST, NDBI 및 NDVI 분포</figcaption>
+  <img src="figures/basic_landcover_map.png" alt="개발 전후 토지피복 유형별 공간분포" width="900">
+  <figcaption>그림 6-1. 개발 전후 토지피복 유형별 공간분포</figcaption>
 </figure>
 
-개발 전 평균 LST는 36.990℃, 개발 후 평균 LST는 43.844℃로 두 시기 사이에 6.854℃의 차이가 나타났다. LST 표준편차는 2.612℃에서 3.089℃로 0.477℃ 증가하였다. 히스토그램에서 개발 전 LST는 35–39℃에 집중된 반면, 개발 후에는 43–47℃에 집중되어 전체적인 분포가 고온 방향으로 이동하였다.
+개발 전에는 농경지가 연구대상지 내부의 넓은 범위에 분포하였고 시가지는 일부 지역에 분산되어 있었다. 개발 후에는 시가지가 동측을 중심으로 넓게 분포하였으며, 나지와 녹지는 내부 및 서측 수변 인접부에 분포하였다. 수면은 두 시기 모두 주로 서측에 위치하였다.
 
-평균 NDBI는 −0.2572에서 −0.0707로 0.1865 증가하였으며, 평균 NDVI는 0.5479에서 0.2505로 0.2974 감소하였다. 개발 이후 LST와 NDBI의 분포는 높은 값의 방향으로 이동하였고, NDVI는 이와 반대로 낮은 값의 방향으로 이동하였다.
+<figure class="report-result-figure">
+  <img src="figures/basic_landcover_area.png" alt="개발 전후 토지피복 유형별 면적" width="900">
+  <figcaption>그림 6-2. 개발 전후 토지피복 유형별 면적</figcaption>
+</figure>
+
+시가지 분류 면적은 0.665km²에서 1.448km²로 0.783km² 증가하였다. 나지는 개발 전 산출 면적이 0.000km²였으며 개발 후 0.214km²로 나타났다. 녹지는 0.139km²에서 0.821km²로 0.682km² 증가하였다. 농경지는 개발 전 1.792km²에서 개발 후 0.000km²로 산출되었다. 수면은 0.353km²에서 0.348km²로 0.005km² 감소하였다. 미분류 면적은 0.501km²에서 0.618km²로 증가하였다.
+
+<figure class="report-result-figure">
+  <img src="figures/basic_landcover_ratio.png" alt="전체 연구대상지 면적 대비 토지피복 구성 비율" width="900">
+  <figcaption>그림 6-3. 전체 연구대상지 면적 대비 토지피복 구성 비율</figcaption>
+</figure>
+
+| 토지피복 | 개발 전 면적(km²) | 개발 후 면적(km²) | 개발 전 비율(%) | 개발 후 비율(%) | 변화(%p) |
+|---|---:|---:|---:|---:|---:|
+| 시가지 | 0.665 | 1.448 | 19.277 | 41.978 | +22.701 |
+| 나지 | 0.000 | 0.214 | 0.000 | 6.214 | +6.214 |
+| 녹지 | 0.139 | 0.821 | 4.024 | 23.790 | +19.766 |
+| 수면 | 0.353 | 0.348 | 10.225 | 10.091 | −0.134 |
+| 농경지 | 1.792 | 0.000 | 51.951 | 0.000 | −51.951 |
+| 미분류 | 0.501 | 0.618 | 14.523 | 17.928 | +3.405 |
+
+<p class="report-result-table-caption">표 6-0. 개발 전후 토지피복 유형별 면적 및 전체 연구대상지 대비 구성 비율</p>
+
+전체 연구대상지에서 가장 높은 비율을 나타낸 토지피복은 개발 전 농경지(51.951%), 개발 후 시가지(41.978%)였다. 시가지와 나지의 합산 비율은 19.277%에서 48.192%로 증가하였다. 녹지의 분류 비율은 증가하였으나, 이후 제시하는 NDVI 공간분포에서는 높은 식생 지수의 분포가 감소하였다. 두 지표는 서로 다른 분류 및 산출 기준에 따른 결과이다. 미분류 영역이 두 시기 모두 존재하므로 농경지의 산출 면적이 0이라는 결과는 해당 분류 조건에서 농경지로 분류된 면적이 없음을 나타낸다.
+
+#### 6.0.2 개발 전후 LST·NDBI·NDVI 공간분포
+
+개발 전후 LST, NDBI 및 NDVI의 공간분포를 비교하였다. 공간분포도는 Landsat 8·9 영상(개발 전 6장, 개발 후 12장, 구름 피복률 80% 이하)의 중앙값 합성 결과로, 지표별로 두 시기에 동일한 색상 범위를 적용하였다. 이 탐색 자료의 영상 구성 및 합성 조건은 세부목적 1의 분석 조건과 다르므로 공간적 분포 비교에 한하여 활용하였다.
+
+<figure class="report-result-figure">
+  <img src="figures/basic_lst_map.png" alt="개발 전후 지표온도(LST)의 공간분포" width="900">
+  <figcaption>그림 6-4. 개발 전후 지표온도(LST)의 공간분포</figcaption>
+</figure>
+
+개발 전에는 연구대상지 내부의 저온 지역과 상대적으로 높은 온도를 나타내는 지역이 혼재하였다. 개발 후에는 연구대상지 내부의 대부분이 높은 온도 범위로 이동하였으며, 특히 중앙부 서쪽에서 상대적으로 높은 LST가 나타났다. 두 시기 모두 연구대상지 서측 낙동강 수면에서는 주변 육지보다 낮은 LST가 나타났다.
+
+<figure class="report-result-figure">
+  <img src="figures/basic_ndbi_map.png" alt="개발 전후 시가지 지수(NDBI)의 공간분포" width="900">
+  <figcaption>그림 6-5. 개발 전후 시가지 지수(NDBI)의 공간분포</figcaption>
+</figure>
+
+개발 전 NDBI는 연구대상지 내부의 넓은 범위에서 음의 값을 보였으며, 상대적으로 높은 값은 일부 선형 및 국지적 영역에 분포하였다. 개발 후에는 육지의 넓은 범위에서 NDBI가 0에 가까운 방향으로 이동하였다. 서측 수면은 두 시기 모두 낮은 NDBI를 나타냈다.
+
+<figure class="report-result-figure">
+  <img src="figures/basic_ndvi_map.png" alt="개발 전후 식생 지수(NDVI)의 공간분포" width="900">
+  <figcaption>그림 6-6. 개발 전후 식생 지수(NDVI)의 공간분포</figcaption>
+</figure>
+
+개발 전에는 연구대상지 내부의 넓은 범위에 높은 NDVI가 분포하였으나, 개발 후에는 낮은 NDVI를 나타내는 영역이 확대되었다. 개발 후 상대적으로 높은 NDVI는 서측 수변 인접부 및 내부의 일부 국지적 영역에 분포하였다.
+
+기초 탐색 분석에서 확인한 토지피복 구성 및 지표의 공간분포를 바탕으로, 이하에서는 토지피복 전환별 LST 변화와 수변·녹지 경계로부터의 거리별 LST를 정량적으로 비교하였다.
 
 ### 6.1 세부목적 1 · 개발 전후 토지피복 및 열환경 변화
 
@@ -256,7 +307,7 @@ NDBI만을 이용한 통계적 보정
 
 <figure class="report-result-figure">
   <img src="figures/result_transition.png" alt="토지피복 전환별 평균 LST 변화량" width="900">
-  <figcaption>그림 6-2. 토지피복 전환 유형별 평균 ΔLST</figcaption>
+  <figcaption>그림 6-7. 토지피복 전환 유형별 평균 ΔLST</figcaption>
 </figure>
 
 | 토지피복 전환 유형 | 분류 면적(km²) | 평균 ΔLST(℃) |
@@ -282,7 +333,7 @@ NDBI만을 이용한 통계적 보정
 
 <figure class="report-result-figure">
   <img src="figures/result_relative.png" alt="유지지역 기준 상대적 LST 변화" width="900">
-  <figcaption>그림 6-3. 토지피복 유지지역 기준 상대적 ΔLST</figcaption>
+  <figcaption>그림 6-8. 토지피복 유지지역 기준 상대적 ΔLST</figcaption>
 </figure>
 
 기준값을 차감한 결과, 농경지→시가지 전환 지역의 상대적 온도 상승량은 +2.456℃로 나타났다. 농경지→나지 전환 지역의 상대적 온도 상승량은 +3.376℃였다. 농경지→나지의 상대적 상승량은 농경지→시가지보다 0.920℃ 높았다. 나지→시가지에서는 −3.183℃가 산출되어 기준값보다 낮은 상승폭을 보였다. 음의 상대적 변화량은 실제 LST가 하락했다는 뜻이 아니라 관측된 상승량이 기준값보다 작았음을 나타낸다.
@@ -291,7 +342,7 @@ NDBI만을 이용한 통계적 보정
 
 <figure class="report-result-figure">
   <img src="figures/result_ndbi.png" alt="NDBI 구간별 평균 LST" width="900">
-  <figcaption>그림 6-4. NDBI 구간별 개발 전후 평균 LST (initial: 2016–2017년, recent: 2024–2025년)</figcaption>
+  <figcaption>그림 6-9. NDBI 구간별 개발 전후 평균 LST (initial: 2016–2017년, recent: 2024–2025년)</figcaption>
 </figure>
 
 개발 전후 모두 유효한 값이 산출된 세 NDBI 구간에서는 NDBI가 높은 구간일수록 평균 LST도 높게 나타났다. 개발 전후 평균 LST는 −1.01~−0.3 구간에서 1.023℃, −0.3~−0.1 구간에서 5.320℃, −0.1~0.1 구간에서 5.531℃ 상승하였다. 0.3~1.01 구간은 두 시기 모두 산출되지 않았다.
@@ -302,7 +353,7 @@ NDBI만을 이용한 통계적 보정
 
 <figure class="report-result-figure">
   <img src="figures/result_scatter.png" alt="NDBI 변화량과 LST 변화량의 산점도" width="900">
-  <figcaption>그림 6-5. ΔNDBI와 ΔLST의 산점도 및 최소제곱 회귀직선</figcaption>
+  <figcaption>그림 6-10. ΔNDBI와 ΔLST의 산점도 및 최소제곱 회귀직선</figcaption>
 </figure>
 
 1,103개 유효 공간 표본의 산점도에서는 ΔNDBI가 증가하는 방향으로 ΔLST도 증가하는 경향이 나타났다. 피어슨 상관계수는 +0.712였으며, 회귀계수는 약 +13.73, 결정계수(R²)는 0.5068로 나타났다. ΔNDBI가 0.1 증가할 때 회귀직선에서 예측되는 ΔLST는 약 1.373℃ 높았다. 단순선형회귀모형의 설명력은 약 50.68%였다.
@@ -317,7 +368,7 @@ NDBI만을 이용한 통계적 보정
 
 <figure class="report-result-figure">
   <img src="figures/result_river_original.png" alt="개발 전후 수변 거리별 관측 및 보정 평균 LST" width="1000">
-  <figcaption>그림 6-6. 개발 전후 수변 거리별 NDBI 보정 전후 평균 LST (거리 구간: 30m 간격, 각 점은 구간 중심의 평균 LST, 분석 상한: 400m)</figcaption>
+  <figcaption>그림 6-11. 개발 전후 수변 거리별 NDBI 보정 전후 평균 LST (거리 구간: 30m 간격, 각 점은 구간 중심의 평균 LST, 분석 상한: 400m)</figcaption>
 </figure>
 
 개발 전 관측 평균 LST는 30–60m에서 33.681℃, 90–120m에서 34.866℃로 증가하였으나, 270–300m에서는 33.055℃로 낮아졌다. 개발 전 거리별 평균 LST에서는 일관된 증가 양상이 나타나지 않았다.
@@ -349,7 +400,7 @@ NDBI만을 이용한 통계적 보정
 
 <figure class="report-result-figure">
   <img src="figures/result_green_scatter.png" alt="녹지 경계 거리와 NDBI 보정 LST 산점도" width="800">
-  <figcaption>그림 6-7. 녹지 경계 거리와 NDBI 보정 LST의 산점도</figcaption>
+  <figcaption>그림 6-12. 녹지 경계 거리와 NDBI 보정 LST의 산점도</figcaption>
 </figure>
 
 NDBI 통제 후 산점도의 회귀직선에서는 녹지 경계로부터의 이격 거리가 증가할수록 보정 LST가 평균적으로 상승하는 결과가 나타났다. 거리 회귀계수는 통제 전 +0.726℃/100m, 통제 후 +0.581℃/100m로 두 조건 모두 양의 기울기를 보였으며, 통제 후 기울기는 0.145℃/100m 감소하였다. 통제 후 회귀직선에서 이격 거리가 100m 증가할 때 보정 LST는 약 0.581℃ 높게 추정되었다. 결정계수(R²)는 0.027로 선형회귀모형의 설명력은 약 2.7%였다. 동일 거리에서도 보정 LST에 편차가 나타났으며, 공간 표본은 회귀직선 주변에 분산되었다. 통제 전후 95% 신뢰구간은 각각 −0.062~+1.515와 −0.194~+1.356℃/100m로 모두 0을 포함하였다.
@@ -358,7 +409,7 @@ NDBI 통제 후 산점도의 회귀직선에서는 녹지 경계로부터의 이
 
 <figure class="report-result-figure">
   <img src="figures/result_green_original.png" alt="녹지 경계 거리별 보정 전후 평균 LST" width="900">
-  <figcaption>그림 6-8. 녹지 경계 거리별 NDBI 보정 전후 평균 LST (거리축: 30m 구간 중심)</figcaption>
+  <figcaption>그림 6-13. 녹지 경계 거리별 NDBI 보정 전후 평균 LST (거리축: 30m 구간 중심)</figcaption>
 </figure>
 
 NDBI 통제 전 평균 LST는 0–30m에서 44.823℃, 30–60m에서 45.066℃, 60–90m에서 45.248℃, 90–120m에서 45.419℃, 120–150m에서 45.507℃로 나타났다. 다섯 구간 모두 이전 구간보다 평균 LST가 높았으며, 첫 구간과 마지막 구간의 차이는 0.684℃였다.
