@@ -311,7 +311,6 @@ html {
 })();
 </script>
 
-<h2 id="results" style="scroll-margin-top: 100px;">6. 결과</h2>
 
 
 ### 6.0 기초 탐색 분석
