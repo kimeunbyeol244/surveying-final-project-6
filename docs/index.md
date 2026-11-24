@@ -227,97 +227,91 @@ NDBI만을 이용한 통계적 보정
 <h2 id="results" style="scroll-margin-top: 100px;">6. 결과</h2>
 
 <style>
-html { scroll-behavior: smooth; }
-#results { scroll-margin-top: 100px; }
-.report-result-figure { display: block; width: 100%; margin: 24px auto; text-align: center !important; }
-.report-result-figure img { display: block; max-width: 100%; height: auto; margin: 0 auto !important; }
-.report-result-figure figcaption { display: block; width: 100%; text-align: center !important; font-size: 0.80rem !important; font-weight: 400 !important; color: #808080; line-height: 1.5; margin: 8px auto 0; }
-.report-result-table-caption { text-align: center !important; font-size: 0.80rem !important; color: #808080; font-weight: 400 !important; }
+html {
+  scroll-behavior: smooth;
+}
+
+#results {
+  scroll-margin-top: 100px;
+}
+
+.report-result-figure {
+  display: block;
+  width: 100%;
+  margin: 24px auto;
+  text-align: center !important;
+}
+
+.report-result-figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto !important;
+}
+
+.report-result-figure figcaption {
+  display: block;
+  width: 100%;
+  text-align: center !important;
+  font-size: 0.80rem !important;
+  font-weight: 400 !important;
+  color: #808080;
+  line-height: 1.5;
+  margin: 8px auto 0;
+}
+
+.report-result-table-caption {
+  text-align: center !important;
+  font-size: 0.80rem !important;
+  color: #808080;
+  font-weight: 400 !important;
+}
 </style>
 
 <script>
 (function () {
-  var ids = ['background','question','objectives','materials','method','results','discussion','conclusion'];
+  var ids = [
+    'background',
+    'question',
+    'objectives',
+    'materials',
+    'method',
+    'results',
+    'discussion',
+    'conclusion'
+  ];
+
   document.addEventListener('click', function (event) {
     var link = event.target.closest && event.target.closest('a[href]');
+
     if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+
     var href = link.getAttribute('href');
+
     if (!href || href.charAt(0) !== '#') return;
+
     var id = href.slice(1);
+
     if (ids.indexOf(id) === -1) return;
+
     var target = document.getElementById(id);
+
     if (!target) return;
+
     event.preventDefault();
     event.stopPropagation();
+
     history.pushState(null, '', '#' + id);
-    target.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
   }, true);
 })();
 </script>
-
 
 <h2 id="results" style="scroll-margin-top: 100px;">6. 결과</h2>
-
-<style>
-html { scroll-behavior: smooth; }
-#results { scroll-margin-top: 100px; }
-.report-result-figure { display: block; width: 100%; margin: 24px auto; text-align: center !important; }
-.report-result-figure img { display: block; max-width: 100%; height: auto; margin: 0 auto !important; }
-.report-result-figure figcaption { display: block; width: 100%; text-align: center !important; font-size: 0.80rem !important; font-weight: 400 !important; color: #808080; line-height: 1.5; margin: 8px auto 0; }
-.report-result-table-caption { text-align: center !important; font-size: 0.80rem !important; color: #808080; font-weight: 400 !important; }
-</style>
-
-<script>
-(function () {
-  var ids = ['background','question','objectives','materials','method','results','discussion','conclusion'];
-  document.addEventListener('click', function (event) {
-    var link = event.target.closest && event.target.closest('a[href]');
-    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-    var href = link.getAttribute('href');
-    if (!href || href.charAt(0) !== '#') return;
-    var id = href.slice(1);
-    if (ids.indexOf(id) === -1) return;
-    var target = document.getElementById(id);
-    if (!target) return;
-    event.preventDefault();
-    event.stopPropagation();
-    history.pushState(null, '', '#' + id);
-    target.scrollIntoView({behavior: 'smooth', block: 'start'});
-  }, true);
-})();
-</script>
-
-
-<h2 id="results" style="scroll-margin-top: 100px;">6. 결과</h2>
-
-<style>
-html { scroll-behavior: smooth; }
-#results { scroll-margin-top: 100px; }
-.report-result-figure { display: block; width: 100%; margin: 24px auto; text-align: center !important; }
-.report-result-figure img { display: block; max-width: 100%; height: auto; margin: 0 auto !important; }
-.report-result-figure figcaption { display: block; width: 100%; text-align: center !important; font-size: 0.80rem !important; font-weight: 400 !important; color: #808080; line-height: 1.5; margin: 8px auto 0; }
-.report-result-table-caption { text-align: center !important; font-size: 0.80rem !important; color: #808080; font-weight: 400 !important; }
-</style>
-
-<script>
-(function () {
-  var ids = ['background','question','objectives','materials','method','results','discussion','conclusion'];
-  document.addEventListener('click', function (event) {
-    var link = event.target.closest && event.target.closest('a[href]');
-    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-    var href = link.getAttribute('href');
-    if (!href || href.charAt(0) !== '#') return;
-    var id = href.slice(1);
-    if (ids.indexOf(id) === -1) return;
-    var target = document.getElementById(id);
-    if (!target) return;
-    event.preventDefault();
-    event.stopPropagation();
-    history.pushState(null, '', '#' + id);
-    target.scrollIntoView({behavior: 'smooth', block: 'start'});
-  }, true);
-})();
-</script>
 
 
 ### 6.0 기초 탐색 분석
