@@ -1,0 +1,424 @@
+!pip -q install earthengine-api geemap
+
+import ee
+import geemap
+import numpy as np
+from IPython.display import display
+
+# ============================================================
+# 1. 기본 설정
+# ============================================================
+
+EE_PROJECT = 'glass-potion-508800-r7'
+
+NW_CORNER = (35.1581, 128.9021)
+SE_CORNER = (35.1386, 128.9196)
+
+CRS = 'EPSG:32652'
+SCALE = 30
+
+CLOUD_MAX = 20
+
+MNDWI_LIMIT = 0.0
+MIN_WATER_PIXELS = 256
+
+BIN = 30
+MAX_D = 400
+NB_PX = 3
+
+# ============================================================
+# 2. Earth Engine 초기화
+# ============================================================
+
+try:
+    ee.Initialize(project=EE_PROJECT)
+except Exception:
+    ee.Authenticate()
+    ee.Initialize(project=EE_PROJECT)
+
+roi = ee.Geometry.Rectangle([
+    NW_CORNER[1],
+    SE_CORNER[0],
+    SE_CORNER[1],
+    NW_CORNER[0]
+])
+
+roi_big = roi.buffer(1500)
+
+# ============================================================
+# 3. Landsat 전처리
+# 기존 세부목적 2와 동일
+# ============================================================
+
+def prep(img):
+
+    qa = img.select('QA_PIXEL')
+
+    clear = qa.bitwiseAnd(0b11111).eq(0)
+    sat = img.select('QA_RADSAT').eq(0)
+
+    sr = (
+        img.select('SR_B.')
+        .multiply(0.0000275)
+        .add(-0.2)
+    )
+
+    lst = (
+        img.select('ST_B10')
+        .multiply(0.00341802)
+        .add(149.0)
+        .subtract(273.15)
+        .rename('LST')
+    )
+
+    ndbi = sr.normalizedDifference(
+        ['SR_B6', 'SR_B5']
+    ).rename('NDBI')
+
+    mndwi = sr.normalizedDifference(
+        ['SR_B3', 'SR_B6']
+    ).rename('MNDWI')
+
+    rgb = sr.select([
+        'SR_B4', 'SR_B3', 'SR_B2'
+    ])
+
+    return (
+        ee.Image.cat([lst, ndbi, mndwi, rgb])
+        .updateMask(clear.And(sat))
+    )
+
+
+# ============================================================
+# 4. Landsat 영상 수집
+# ============================================================
+
+def get_collection(y0, y1):
+
+    l8 = ee.ImageCollection(
+        'LANDSAT/LC08/C02/T1_L2'
+    )
+
+    l9 = ee.ImageCollection(
+        'LANDSAT/LC09/C02/T1_L2'
+    )
+
+    return (
+        l8.merge(l9)
+        .filterBounds(roi_big)
+        .filter(
+            ee.Filter.calendarRange(y0, y1, 'year')
+        )
+        .filter(
+            ee.Filter.calendarRange(7, 8, 'month')
+        )
+        .filter(
+            ee.Filter.eq('PROCESSING_LEVEL', 'L2SP')
+        )
+        .filter(
+            ee.Filter.lte('CLOUD_COVER', CLOUD_MAX)
+        )
+    )
+
+
+# ============================================================
+# 5. 수역 경계 및 거리 분석
+# ============================================================
+
+def make_layers(y0, y1):
+
+    col = get_collection(y0, y1)
+
+    n_scenes = col.size().getInfo()
+
+    print(f'{y0}-{y1} 영상 수: {n_scenes}장')
+
+    if n_scenes == 0:
+        raise ValueError('조건에 맞는 영상이 없습니다.')
+
+    comp = col.map(prep).median()
+
+    # MNDWI 기반 전체 수역
+    water = comp.select('MNDWI').gt(MNDWI_LIMIT)
+
+    land = comp.select('MNDWI').lte(MNDWI_LIMIT)
+
+    # 기존 코드와 동일한 대규모 수역 추출
+    river = (
+        water.selfMask()
+        .connectedPixelCount(256, True)
+        .gte(MIN_WATER_PIXELS)
+        .unmask(0)
+        .reproject(crs=CRS, scale=SCALE)
+    )
+
+    # 수역 경계 추출
+    # 수역 중 육지에 인접한 가장자리 픽셀
+    river_inner = river.focalMin(
+        radius=1,
+        kernelType='square',
+        units='pixels'
+    )
+
+    boundary = (
+        river.subtract(river_inner)
+        .gt(0)
+        .selfMask()
+        .rename('Boundary')
+    )
+
+    # 기존 코드와 동일한 수역 최단거리
+    dist = (
+        river.fastDistanceTransform(
+            neighborhood=30,
+            units='pixels',
+            metric='squared_euclidean'
+        )
+        .sqrt()
+        .multiply(SCALE)
+        .rename('Distance')
+    )
+
+    # 30~400m 육지 분석 영역
+    analysis_mask = (
+        dist.gte(BIN)
+        .And(dist.lt(MAX_D))
+        .And(land)
+    )
+
+    distance_land = dist.updateMask(
+        analysis_mask
+    )
+
+    # 30m 단위 거리 구간
+    distance_bins = (
+        dist.divide(BIN)
+        .floor()
+        .multiply(BIN)
+        .updateMask(analysis_mask)
+        .rename('Distance_bin')
+    )
+
+    # 기존 수역 제외 주변 NDBI
+    ndbi_nb = (
+        comp.select('NDBI')
+        .updateMask(land)
+        .reduceNeighborhood(
+            reducer=ee.Reducer.mean(),
+            kernel=ee.Kernel.circle(
+                radius=NB_PX,
+                units='pixels'
+            )
+        )
+        .rename('NDBI_nb')
+    )
+
+    # 실제 분석에 필요한 모든 변수가
+    # 유효한 공간
+    valid_mask = (
+        analysis_mask
+        .And(comp.select('LST').mask())
+        .And(ndbi_nb.mask())
+    )
+
+    valid_area = valid_mask.selfMask()
+
+    return {
+        'comp': comp,
+        'water': water.selfMask(),
+        'river': river.selfMask(),
+        'boundary': boundary,
+        'distance': distance_land,
+        'bins': distance_bins,
+        'valid_area': valid_area
+    }
+
+
+# ============================================================
+# 6. 개발 전후 자료 생성
+# ============================================================
+
+before = make_layers(2016, 2017)
+after = make_layers(2024, 2025)
+
+
+# ============================================================
+# 7. 지도 시각화
+# ============================================================
+
+rgb_vis = {
+    'bands': ['SR_B4', 'SR_B3', 'SR_B2'],
+    'min': 0.02,
+    'max': 0.30,
+    'gamma': 1.2
+}
+
+mndwi_vis = {
+    'min': -0.5,
+    'max': 0.5,
+    'palette': [
+        '8c510a',
+        'f6e8c3',
+        'ffffff',
+        '80cdc1',
+        '01665e'
+    ]
+}
+
+distance_palette = [
+    '2166ac',
+    '4393c3',
+    '67a9cf',
+    '92c5de',
+    'd1e5f0',
+    'e0f3b1',
+    'ffffbf',
+    'fee090',
+    'fdae61',
+    'f46d43',
+    'd73027',
+    'a50026',
+    '67001f'
+]
+
+distance_vis = {
+    'min': 30,
+    'max': 390,
+    'palette': distance_palette
+}
+
+lst_vis = {
+    'min': 30,
+    'max': 50,
+    'palette': [
+        '313695',
+        '74add1',
+        'ffffbf',
+        'fdae61',
+        'a50026'
+    ]
+}
+
+
+def create_map(data, label):
+
+    Map = geemap.Map()
+
+    Map.add_basemap('SATELLITE')
+    Map.centerObject(roi, 15)
+
+    # 해당 시기의 실제 Landsat 천연색 영상
+    Map.addLayer(
+        data['comp'].clip(roi_big),
+        rgb_vis,
+        f'{label} Landsat RGB',
+        True
+    )
+
+    # MNDWI 전체 분포
+    Map.addLayer(
+        data['comp'].select('MNDWI').clip(roi_big),
+        mndwi_vis,
+        'MNDWI',
+        False
+    )
+
+    # MNDWI > 0 전체 수역
+    Map.addLayer(
+        data['water'].clip(roi_big),
+        {'palette': ['00BFFF']},
+        '전체 수역 (MNDWI > 0)',
+        False,
+        0.6
+    )
+
+    # 실제 거리 계산에 사용한 대규모 수역
+    Map.addLayer(
+        data['river'].clip(roi_big),
+        {'palette': ['0066FF']},
+        '분석 대상 대규모 수역',
+        True,
+        0.5
+    )
+
+    # 분석 거리 구간
+    Map.addLayer(
+        data['bins'].clip(roi),
+        distance_vis,
+        '수변 거리 구간 (30~400m)',
+        False,
+        0.7
+    )
+
+    # 유효 분석 영역
+    Map.addLayer(
+        data['valid_area'].clip(roi),
+        {'palette': ['00FF00']},
+        '유효 분석 가능 영역',
+        False,
+        0.5
+    )
+
+    # 지표온도 분포
+    Map.addLayer(
+        data['comp'].select('LST').clip(roi),
+        lst_vis,
+        '지표온도 LST',
+        False
+    )
+
+    # 수변 경계 표시
+    Map.addLayer(
+        data['boundary'].clip(roi_big),
+        {'palette': ['FF0000']},
+        '수역 경계',
+        True
+    )
+
+    # 연구대상지 경계
+    roi_outline = ee.Image().byte().paint(
+        roi, 1, 2
+    )
+
+    Map.addLayer(
+        roi_outline.selfMask(),
+        {'palette': ['FFFF00']},
+        '연구대상지 경계',
+        True
+    )
+
+    # 범례
+    Map.add_legend(
+        title='Waterfront analysis',
+        legend_dict={
+            'River area': '#0066FF',
+            'Water boundary': '#FF0000',
+            'Study area': '#FFFF00'
+        }
+    )
+
+    return Map
+
+
+# ============================================================
+# 8. 지도 출력
+# ============================================================
+
+print('\n개발 전: 2016~2017년')
+
+Map_before = create_map(
+    before,
+    '2016-2017'
+)
+
+display(Map_before)
+
+
+print('\n개발 후: 2024~2025년')
+
+Map_after = create_map(
+    after,
+    '2024-2025'
+)
+
+display(Map_after)
