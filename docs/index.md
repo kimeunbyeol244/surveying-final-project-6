@@ -288,6 +288,38 @@ html { scroll-behavior: smooth; }
 </script>
 
 
+<h2 id="results" style="scroll-margin-top: 100px;">6. 결과</h2>
+
+<style>
+html { scroll-behavior: smooth; }
+#results { scroll-margin-top: 100px; }
+.report-result-figure { display: block; width: 100%; margin: 24px auto; text-align: center !important; }
+.report-result-figure img { display: block; max-width: 100%; height: auto; margin: 0 auto !important; }
+.report-result-figure figcaption { display: block; width: 100%; text-align: center !important; font-size: 0.80rem !important; font-weight: 400 !important; color: #808080; line-height: 1.5; margin: 8px auto 0; }
+.report-result-table-caption { text-align: center !important; font-size: 0.80rem !important; color: #808080; font-weight: 400 !important; }
+</style>
+
+<script>
+(function () {
+  var ids = ['background','question','objectives','materials','method','results','discussion','conclusion'];
+  document.addEventListener('click', function (event) {
+    var link = event.target.closest && event.target.closest('a[href]');
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    var href = link.getAttribute('href');
+    if (!href || href.charAt(0) !== '#') return;
+    var id = href.slice(1);
+    if (ids.indexOf(id) === -1) return;
+    var target = document.getElementById(id);
+    if (!target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    history.pushState(null, '', '#' + id);
+    target.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }, true);
+})();
+</script>
+
+
 ### 6.0 기초 탐색 분석
 
 #### 6.0.1 개발 전후 토지피복 구성 변화
@@ -302,29 +334,85 @@ Dynamic World V1의 평균 분류 확률을 5개 토지피복 유형으로 통�
 시가지 분류 면적은 0.665km²에서 1.448km²로 0.783km² 증가하였다. 나지는 개발 전 산출 면적이 0.000km²였으며 개발 후 0.214km²로 나타났다. 녹지는 0.139km²에서 0.821km²로 0.682km² 증가하였다. 농경지는 개발 전 1.792km²에서 개발 후 0.000km²로 산출되었다. 수면은 0.353km²에서 0.348km²로 0.005km² 감소하였다. 미분류 면적은 0.501km²에서 0.618km²로 증가하였다.
 
 <figure class="report-result-figure">
-  <img src="figures/basic_landcover_ratio.png" alt="전체 연구대상지 면적 대비 토지피복 구성 비율" width="900">
-  <figcaption>그림 6-2. 전체 연구대상지 면적 대비 토지피복 구성 비율</figcaption>
+  <img src="figures/basic_landcover_map.png" alt="개발 전후 토지피복 유형별 공간분포" width="900">
+  <figcaption>그림 6-2. 개발 전후 토지피복 유형별 공간분포</figcaption>
 </figure>
 
-| 토지피복 | 개발 전 면적(km²) | 개발 후 면적(km²) | 개발 전 비율(%) | 개발 후 비율(%) | 변화(%p) |
-|---|---:|---:|---:|---:|---:|
-| 시가지 | 0.665 | 1.448 | 19.277 | 41.978 | +22.701 |
-| 나지 | 0.000 | 0.214 | 0.000 | 6.214 | +6.214 |
-| 녹지 | 0.139 | 0.821 | 4.024 | 23.790 | +19.766 |
-| 수면 | 0.353 | 0.348 | 10.225 | 10.091 | −0.134 |
-| 농경지 | 1.792 | 0.000 | 51.951 | 0.000 | −51.951 |
-| 미분류 | 0.501 | 0.618 | 14.523 | 17.928 | +3.405 |
+개발 전에는 농경지가 연구대상지 내부의 넓은 범위에 분포하였고 시가지는 일부 지역에 분산되어 있었다. 개발 후에는 시가지가 동측을 중심으로 넓게 분포하였으며, 나지와 녹지는 내부 및 서측 수변 인접부에 분포하였다. 수면은 두 시기 모두 주로 서측에 위치하였다.
+
+<figure class="report-result-figure">
+  <img src="figures/basic_landcover_ratio.png" alt="전체 연구대상지 면적 대비 토지피복 구성 비율" width="900">
+  <figcaption>그림 6-3. 전체 연구대상지 면적 대비 토지피복 구성 비율</figcaption>
+</figure>
+
+<div style="overflow-x:auto; margin:16px 0 8px;">
+<table style="border-collapse:collapse; width:100%; border:1px solid #999999;">
+  <thead>
+    <tr>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">토지피복</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">개발 전 면적(km²)</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">개발 후 면적(km²)</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">개발 전 비율(%)</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">개발 후 비율(%)</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">변화(%p)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">시가지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.665</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">1.448</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">19.277</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">41.978</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+22.701</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">나지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.000</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.214</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.000</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">6.214</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+6.214</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">녹지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.139</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.821</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">4.024</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">23.790</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+19.766</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">수면</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.353</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.348</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">10.225</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">10.091</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">−0.134</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">농경지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">1.792</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.000</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">51.951</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.000</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">−51.951</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">미분류</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.501</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.618</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">14.523</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">17.928</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+3.405</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 <p class="report-result-table-caption">표 6-0. 개발 전후 토지피복 유형별 면적 및 전체 연구대상지 대비 구성 비율</p>
 
 전체 연구대상지에서 가장 높은 비율을 나타낸 토지피복은 개발 전 농경지(51.951%), 개발 후 시가지(41.978%)였다. 시가지와 나지의 합산 비율은 19.277%에서 48.192%로 증가하였다. 미분류 영역이 두 시기 모두 존재하므로 농경지의 산출 면적이 0이라는 결과는 해당 분류 조건에서 농경지로 분류된 면적이 없음을 나타낸다.
-
-<figure class="report-result-figure">
-  <img src="figures/basic_landcover_map.png" alt="개발 전후 토지피복 유형별 공간분포" width="900">
-  <figcaption>그림 6-3. 개발 전후 토지피복 유형별 공간분포</figcaption>
-</figure>
-
-개발 전에는 농경지가 연구대상지 내부의 넓은 범위에 분포하였고 시가지는 일부 지역에 분산되어 있었다. 개발 후에는 시가지가 동측을 중심으로 넓게 분포하였으며, 나지와 녹지는 내부 및 서측 수변 인접부에 분포하였다. 수면은 두 시기 모두 주로 서측에 위치하였다.
 
 #### 6.0.2 개발 전후 LST 공간분포
 
@@ -341,7 +429,7 @@ Dynamic World V1의 평균 분류 확률을 5개 토지피복 유형으로 통�
 
 ### 6.1 세부목적 1 · 개발 전후 토지피복 및 열환경 변화
 
-**연구 질문 1.** 개발 초기(2016·2017년 7월과 8월)과 개발 후기(2024·2025년 7월과 8월)의 여름철 지표온도(LST)는 에코델타시티에서 어떻게 달라졌으며, 그 변화는 토지피복 유형(시가지, 나지, 녹지, 수면, 농경지) 및 토지피복 전환 유형별로 어떻게 다르고 시가지 지수(NDBI)의 변화와 어떤 관련성을 보이는가?
+**학술적 연구 질문 1.** 개발 초기(2016·2017년 7월과 8월)과 개발 후기(2024·2025년 7월과 8월)의 여름철 지표온도(LST)는 에코델타시티에서 어떻게 달라졌으며, 그 변화는 토지피복 유형(시가지, 나지, 녹지, 수면, 농경지) 및 토지피복 전환 유형별로 어떻게 다르고 시가지 지수(NDBI)의 변화와 어떤 관련성을 보이는가?
 
 #### 6.1.1 토지피복 전환 유형별 면적 및 LST 변화
 
@@ -350,14 +438,49 @@ Dynamic World V1의 평균 분류 확률을 5개 토지피복 유형으로 통�
   <figcaption>그림 6-5. 토지피복 전환 유형별 평균 ΔLST</figcaption>
 </figure>
 
-| 토지피복 전환 유형 | 분류 면적(km²) | 평균 ΔLST(℃) |
-|---|---:|---:|
-| 농경지→시가지 | 1.399 | +8.146 |
-| 농경지→나지 | 0.436 | +9.066 |
-| 나지→시가지 | 0.005 | +2.508 |
-| 시가지 유지 | 0.556 | +5.761 |
-| 농경지 유지 | 0.008 | +5.620 |
-| 녹지 유지 | 0.000 | 산출 불가 |
+<div style="overflow-x:auto; margin:16px 0 8px;">
+<table style="border-collapse:collapse; width:100%; border:1px solid #999999;">
+  <thead>
+    <tr>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">토지피복 전환 유형</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">분류 면적(km²)</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">평균 ΔLST(℃)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">농경지→시가지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">1.399</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+8.146</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">농경지→나지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.436</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+9.066</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">나지→시가지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.005</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+2.508</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">시가지 유지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.556</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+5.761</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">농경지 유지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.008</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+5.620</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">녹지 유지</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">0.000</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">산출 불가</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 <p class="report-result-table-caption">표 6-1. 토지피복 전환 유형별 분류 면적 및 평균 LST 변화량</p>
 
@@ -402,7 +525,7 @@ Dynamic World V1의 평균 분류 확률을 5개 토지피복 유형으로 통�
 
 ### 6.2 세부목적 2 · 수변 거리별 냉각 효과
 
-**연구 질문 2.** 낙동강 수변으로부터의 거리에 따라 개발 초기,후기의 평균 LST는 어떻게 달라지며, 주변 시가지 수준(NDBI)을 통제한 뒤에도 거리-온도 관계가 남는가? 또한 거리-온도 기울기가 완만해지는 변화점은 개발 전후에 어떻게 달라졌는가?
+**학술적 연구 질문 2.** 낙동강 수변으로부터의 거리에 따라 개발 초기,후기의 평균 LST는 어떻게 달라지며, 주변 시가지 수준(NDBI)을 통제한 뒤에도 거리-온도 관계가 남는가? 또한 거리-온도 기울기가 완만해지는 변화점은 개발 전후에 어떻게 달라졌는가?
 
 #### 6.2.1 개발 전후 수변 거리별 평균 LST
 
@@ -417,10 +540,32 @@ Dynamic World V1의 평균 분류 확률을 5개 토지피복 유형으로 통�
 
 #### 6.2.2 개발 전후 NDBI 통제에 따른 거리 회귀계수
 
-| 구분 | 통제 전 | 통제 후: 수역 제외 | 통제 후: 수역 포함(기존 분석) |
-|---|---|---|---|
-| 2016–2017 | −0.074 (−0.866~+0.718) | +0.863 (+0.301~+1.425) | +0.222 (−0.376~+0.820) |
-| 2024–2025 | +1.707 (+1.369~+2.044) | +0.596 (+0.241~+0.951) | +0.419 (+0.072~+0.766) |
+<div style="overflow-x:auto; margin:16px 0 8px;">
+<table style="border-collapse:collapse; width:100%; border:1px solid #999999;">
+  <thead>
+    <tr>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">구분</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">통제 전</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">통제 후: 수역 제외</th>
+      <th scope="col" style="border:1px solid #999999; padding:8px 10px; text-align:center; background-color:#E8F0F7; color:#183344;">통제 후: 수역 포함(기존 분석)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">2016–2017</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">−0.074 (−0.866~+0.718)</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+0.863 (+0.301~+1.425)</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+0.222 (−0.376~+0.820)</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:left;">2024–2025</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+1.707 (+1.369~+2.044)</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+0.596 (+0.241~+0.951)</td>
+      <td style="border:1px solid #999999; padding:8px 10px; text-align:center;">+0.419 (+0.072~+0.766)</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
 <p class="report-result-table-caption">표 6-2. 수변 거리 회귀계수 및 95% 신뢰구간 (단위: ℃/100m)</p>
 
@@ -432,7 +577,7 @@ Dynamic World V1의 평균 분류 확률을 5개 토지피복 유형으로 통�
 
 ### 6.3 세부목적 3 · 녹지 경계 거리별 냉각 효과
 
-**연구 질문 3.** 녹지 경계로부터 150 m까지의 거리에 따라 개발 초기,후기의 주변 LST는 어떻게 달라지며, 주변 시가지 수준(NDBI)을 통제한 뒤에도 거리-온도 관계가 남는가?
+**학술적 연구 질문 3.** 녹지 경계로부터 150 m까지의 거리에 따라 개발 초기,후기의 주변 LST는 어떻게 달라지며, 주변 시가지 수준(NDBI)을 통제한 뒤에도 거리-온도 관계가 남는가?
 
 개발 전에는 거리별 평균 LST와 거리 회귀계수를 산출할 수 있는 유효 표본이 충분히 확보되지 않았다. 따라서 개발 후 251개 유효 픽셀에 대한 분석 결과만 제시하였다.
 
@@ -455,6 +600,7 @@ NDBI 통제 후 산점도의 회귀직선에서는 녹지 경계로부터의 이
 NDBI 통제 전 평균 LST는 0–30m에서 44.823℃, 30–60m에서 45.066℃, 60–90m에서 45.248℃, 90–120m에서 45.419℃, 120–150m에서 45.507℃로 나타났다. 다섯 구간 모두 이전 구간보다 평균 LST가 높았으며, 첫 구간과 마지막 구간의 차이는 0.684℃였다.
 
 NDBI 통제 후 평균 LST는 같은 구간 순으로 44.868℃, 45.088℃, 45.158℃, 45.392℃, 45.359℃였다. 0–30m에서 90–120m까지 평균 LST가 연속적으로 증가하였으며, 두 구간 사이의 차이는 0.524℃였다. 90–120m에서 가장 높은 평균 보정 LST가 나타난 후 120–150m에서는 0.033℃ 감소하였다. 통제 후 거리별 평균 LST의 상승 양상은 90–120m 구간까지 관찰되었으며, 120m 이상 구간에서는 이러한 상승 양상이 이어지지 않았다.
+
 
 
 
