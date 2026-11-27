@@ -654,7 +654,7 @@ NDBI 통제 후 평균 LST는 같은 구간 순으로 44.868℃, 45.088℃, 45.1
 3. **표본 수 부족과 비선형적인 온도 변화:** 개발 후기에 확보된 유효 표본이 251개 픽셀로 다소 적었고, 실제 거리별 평균 온도가 90–120m 구간에서 가장 높았다가 120–150m 구간에서는 오히려 0.033℃ 낮아지는 모습을 보였다. 거리에 따라 일정하게 직선으로 오르지 않는 특성 때문에 단순 선형회귀모형의 결정계수(R²)가 낮게 나온 것으로 판단된다.
 
 <figure style="margin: 24px 0; text-align: center;">
-  <img src="images/mixed_pixel.png" alt="혼합 화소 개념도" style="max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;">
+  <img src="figures/mixed_pixel.png" alt="혼합 화소 개념도" style="max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;">
   <figcaption style="font-size: 13px; color: #64748b; margin-top: 8px;">
     <strong>그림 7-1. 위성영상 격자 내 혼합 화소(Mixed Pixel) 발생 개념도</strong><br>
     실제 지표면(좌)의 녹지·도로·건물·나지가 하나의 격자(우) 안에 섞여 들어가면서 경계부 온도 편차가 커지고 선형 설명력이 저하됨.
@@ -725,7 +725,7 @@ NDBI 통제 후 평균 LST는 같은 구간 순으로 44.868℃, 45.088℃, 45.1
 </div>
 
 <figure style="margin: 24px 0; text-align: center;">
-  <img src="images/newtown_plan.png" alt="신도시 열환경 관리 공간 배치 개념도" style="max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;">
+  <img src="figures/newtown_plan.png" alt="신도시 열환경 관리 공간 배치 개념도" style="max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;">
   <figcaption style="font-size: 13px; color: #64748b; margin-top: 8px;">
     <strong>그림 8-1. 분석 결과에 기반한 신도시 열환경 관리 공간 배치 개념도</strong><br>
     (좌→우) ① 수변 냉각 구역 → ② 수변 인접 저밀도 공원·휴식 공간 → ③ 녹지 및 주변 불투수면 관리·그늘막 병행 구역 → ④ 단계별 공사 및 미착공 부지 임시 녹화 구역
