@@ -581,7 +581,7 @@ Dynamic World V1의 평균 분류 확률을 5개 토지피복 유형으로 통�
   <figcaption>그림 6-10. 녹지 경계 거리와 NDBI 보정 LST의 산점도</figcaption>
 </figure>
 
-NDBI 통제 후 산점도의 회귀직선에서는 녹지 경계로부터의 이격 거리가 증가할수록 보정 LST가 평균적으로 상승하는 결과가 나타났다. 거리 회귀계수(β₍d₎)는 +0.580℃/100m로 양의 값을 보였다. 이는 NDBI를 통제한 상태에서 녹지 경계로부터의 거리가 100m 증가할 때 보정 LST가 평균적으로 약 0.581℃ 상승하는 것으로 추정됨을 의미한다. 결정계수(R²)는 0.027로 선형회귀모형의 설명력은 약 2.7%였다. 동일 거리에서도 보정 LST에 편차가 나타났으며, 공간 표본은 회귀직선 주변에 분산되었다. 95% 신뢰구간은 −0.194~+1.356℃/100m로 0을 포함하였다.
+NDBI 통제 후 산점도의 회귀직선에서는 녹지 경계로부터의 이격 거리가 증가할수록 보정 LST가 평균적으로 상승하는 결과가 나타났다. 거리 회귀계수(β₍d₎)는 +0.580℃/100m로 양의 값을 보였다. 이는 NDBI를 통제한 상태에서 녹지 경계로부터의 거리가 100m 증가할 때 보정 LST가 평균적으로 약 0.580℃ 상승하는 것으로 추정됨을 의미한다. 결정계수(R²)는 0.027로 선형회귀모형의 설명력은 약 2.7%였다. 동일 거리에서도 보정 LST에 편차가 나타났으며, 공간 표본은 회귀직선 주변에 분산되었다. 95% 신뢰구간은 −0.194~+1.356℃/100m로 0을 포함하였다.
 
 #### 6.3.2 녹지 경계 거리별 평균 LST 및 냉각 영향 범위
 
@@ -597,142 +597,166 @@ NDBI 통제 후 평균 LST는 같은 구간 순으로 44.868℃, 45.088℃, 45.1
 
 <h2 id="discussion" style="scroll-margin-top: 100px;">7. 토의</h2>
 
-### 7.1 토지피복 변화와 빈 땅(나지) 노출에 따른 온도 상승
-본 연구의 분석 결과, 부산 에코델타시티는 개발 초기(2016–2017년) 농경지 중심(51.951%)의 공간에서 개발 후기(2024–2025년) 시가지(41.978%)와 나지(6.214%)를 합친 비율이 48.192%에 달하는 도시 공간으로 빠르게 바뀌었다. 두 시기의 촬영 날짜와 기상 조건 차이를 보정하기 위해 시가지 유지지역의 평균 온도 변화량(5.761℃)을 빼고 비교한 결과, **농경지→나지 전환 구역(+3.305℃)**이 **농경지→시가지 전환 구역(+2.385℃)**보다 오히려 더 큰 온도 상승을 보였다. 반면, 나지→시가지 전환 구역의 상대적 변화량은 −3.253℃로 기준값보다 상승폭이 작았다.
+### 7.1 토지피복 변화와 나지 노출에 따른 온도 상승
+에코델타시티는 개발 초기(2016–2017년) 농경지 중심(51.951%)의 공간에서 개발 후기(2024–2025년) 시가지(41.978%)와 나지(6.214%)가 48.192%를 차지하는 공간으로 바뀌었다. 시가지 유지지역의 변화량(5.761℃)을 기준으로 빼면, 농경지→나지(+3.305℃)가 농경지→시가지(+2.385℃)보다 온도가 더 크게 올랐다(그림 7-1).
 
-이러한 결과는 신도시를 개발하는 과정에서 **식물이 사라지고 햇빛을 그대로 받는 빈 땅(나지)과 공사 부지가 열환경 악화에 가장 취약하다**는 점을 보여준다. 완공된 시가지에는 건물 그림자와 일부 조경 공간이 섞여 있는 반면, 넓은 나지는 가려주는 것 없이 열을 그대로 쌓고 내뿜기 때문이다. 또한 1,103개 유효 표본을 분석한 결과, NDBI 변화량(상관계수 r = +0.712, 결정계수 R² = 0.5068)이 NDVI 변화량(상관계수 r = −0.678)보다 지표면온도 변화량과 더 높은 상관관계를 보였다. 이는 개발지의 열환경 변화를 볼 때 단순히 녹지가 줄어든 것뿐만 아니라 아스팔트나 콘크리트 같은 인공 피복과 나지가 늘어난 영향을 함께 살펴야 함을 의미한다.
-
-### 7.2 수변 냉각 효과 확인과 주변 건물 밀도(NDBI) 통제의 의미
-낙동강 수변으로부터의 거리별 분석에서는 **주변 건물 밀도(NDBI)를 통제하는 과정**이 왜 중요한지 분명하게 확인되었다. 개발 후기(2024–2025년) 수변 거리 회귀계수는 NDBI를 통제하기 전에 +1.707℃/100m(30–60m와 180–210m 구간 차이 7.003℃)로 크게 나타났으나, 수역을 제외한 주변 NDBI를 통제한 뒤에는 **+0.596℃/100m**(동일 구간 차이 2.316℃)로 약 65% 줄어들었다.
-
-<div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc; margin: 24px 0; font-family: sans-serif;">
-  <div style="font-weight: 700; font-size: 16px; color: #1e293b; margin-bottom: 14px;">
-    개발 후기(2024–2025) 낙동강 수변 거리 회귀계수 분해 (NDBI 통제 전 vs 후)
-  </div>
-
-  <div style="margin-bottom: 16px;">
-    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #475569; margin-bottom: 6px;">
-      <span><strong>NDBI 통제 전 전체 기울기</strong> (주변 건물 밀도 + 수변 효과 혼재)</span>
-      <strong>+1.707℃ / 100m (100%)</strong>
-    </div>
-    <div style="width: 100%; height: 28px; background: #cbd5e1; border-radius: 6px; overflow: hidden; display: flex;">
-      <div style="width: 100%; background: #475569; color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 600;">
-        관측된 전체 거리별 온도 차이 (+1.707℃/100m)
-      </div>
-    </div>
-  </div>
-
-  <div style="text-align: center; font-size: 13px; color: #64748b; margin: 8px 0;">▼ 주변 시가지화 수준(NDBI, 수역 제외) 통계적 통제 ▼</div>
-
-  <div>
-    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #475569; margin-bottom: 6px;">
-      <span><strong>효과 분리 결과</strong></span>
-      <span>건물 밀도 영향 약 65.1% | <strong style="color: #0284c7;">순수 수변 냉각 약 34.9%</strong></span>
-    </div>
-    <div style="width: 100%; height: 34px; border-radius: 6px; overflow: hidden; display: flex;">
-      <div style="width: 65.1%; background: #94a3b8; color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 600;">
-        주변 건물 밀도(NDBI) 효과 (+1.111℃, 65.1%)
-      </div>
-      <div style="width: 34.9%; background: #0284c7; color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-        순수 수변 냉각 (+0.596℃, 34.9%)
-      </div>
-    </div>
-  </div>
-
-  <div style="font-size: 12px; color: #64748b; margin-top: 12px; line-height: 1.5;">
-    * NDBI 통제 후 순수 수변 거리 회귀계수의 95% 신뢰구간은 <strong>+0.241~+0.951℃/100m</strong>로 0을 포함하지 않아 통계적으로 유의함.
-  </div>
-</div>
-
-이는 강 근처가 시원해 보이는 이유의 상당 부분이 실제로는 강변에 건물이 적고 포장이 덜 되어 있기 때문임을 보여준다. 그러나 주변 건물 밀도를 똑같이 맞춘 뒤에도 개발 후기 거리 회귀계수의 95% 신뢰구간이 **+0.241~+0.951℃/100m**로 0을 포함하지 않아 통계적으로 유의한 결과가 유지되었다. 즉, 에코델타시티에서 낙동강 수변은 주변 건물 조건을 빼고 보더라도 **100m당 약 0.596℃의 순수한 냉각 효과**를 내고 있음을 확인하였다. 또한 주변 NDBI를 계산할 때 수역 픽셀을 뺀 조건(+0.596℃/100m)과 포함한 조건(+0.419℃/100m)의 차이는, 물 자체의 값이 육지 분석에 섞이지 않도록 주의해서 처리해야 함을 보여준다.
-
-### 7.3 녹지 거리별 냉각 효과의 낮은 설명력(R² = 0.027)에 대한 원인
-세부목적 3에서 녹지 경계로부터 150m 이내 구간을 분석한 결과, NDBI를 통제한 뒤 0–30m(44.868℃)에서 90–120m(45.392℃)까지 평균 지표면온도가 +0.524℃ 오르는 경향은 나타났다. 하지만 선형회귀모형의 **결정계수(R²)가 0.027(설명력 2.7%)**로 매우 낮고, 통제 후 회귀계수(+0.581℃/100m)의 95% 신뢰구간도 0을 포함(−0.194~+1.356℃/100m)하여 **녹지로부터의 거리와 지표면온도 사이에는 뚜렷한 상관관계가 거의 나타나지 않았다.** 이처럼 설명력이 낮게 나온 원인은 다음 세 가지로 볼 수 있다.
-
-1. **같은 거리 안에 여러 토지피복이 섞여 있음:** 녹지 경계 150m 이내의 좁은 구역 안에는 완공된 건물, 도로, 공사 중인 빈 땅(나지)이 복잡하게 섞여 있다. NDBI로 전반적인 건물 밀도를 통제하더라도 재질마다 열을 머금는 정도가 다르고 주변 환경의 영향이 크기 때문에, 같은 거리에서도 온도 편차가 크게 벌어져 설명력이 낮아졌다.
-2. **위성영상 해상도의 한계:** 본 연구에 사용한 Landsat 8·9 열적외선 영상의 원래 해상도는 100m(30m로 재표본화)이다. 넓은 범위에 영향을 미치는 낙동강 수변과 달리, 150m 이내(30m×5구간)의 좁은 범위에 작용하는 도시 녹지의 온도 변화를 정밀하게 잡아내기에는 해상도가 다소 거칠다. 이로 인해 경계 부근 격자(픽셀)에 녹지와 인공 구조물의 온도가 섞여 들어가면서 정확도가 떨어졌다.
-3. **표본 수 부족과 비선형적인 온도 변화:** 개발 후기에 확보된 유효 표본이 251개 픽셀로 다소 적었고, 실제 거리별 평균 온도가 90–120m 구간에서 가장 높았다가 120–150m 구간에서는 오히려 0.033℃ 낮아지는 모습을 보였다. 거리에 따라 일정하게 직선으로 오르지 않는 특성 때문에 단순 선형회귀모형의 결정계수(R²)가 낮게 나온 것으로 판단된다.
-
-<figure style="margin: 24px 0; text-align: center;">
-  <img src="figures/mixed_pixel.png" alt="혼합 화소 개념도" style="max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;">
-  <figcaption style="font-size: 13px; color: #64748b; margin-top: 8px;">
-    <strong>그림 7-1. 위성영상 격자 내 혼합 화소(Mixed Pixel) 발생 개념도</strong><br>
-    실제 지표면(좌)의 녹지·도로·건물·나지가 하나의 격자(우) 안에 섞여 들어가면서 경계부 온도 편차가 커지고 선형 설명력이 저하됨.
-  </figcaption>
+<figure class="report-result-figure">
+  <img src="figures/fig7-1_transition_relative.png" alt="토지피복 전환 유형별 평균 LST 변화와 기준선" width="800">
+  <figcaption>그림 7-1. 토지피복 전환 유형별 평균 ΔLST와 시가지 유지지역 기준선(5.761℃)</figcaption>
 </figure>
 
+이러한 결과는 신도시를 개발하는 과정에서 식물이 사라지고 햇빛을 그대로 받는 나지와 공사 부지가 열환경 악화에 가장 취약하다는 점을 보여준다. 완공된 시가지에는 건물 그림자와 가로수·조경이 섞이지만, 나지는 햇빛을 가리는 것 없이 그대로 받기 때문으로 보인다. **즉 신도시에서 온도가 가장 크게 오르는 것은 건물이 다 들어선 상태보다, 땅이 드러난 채 공사 중인 상태라고 해석된다.** 다만 나지가 시가지로 완공된 뒤 온도 상승이 줄어드는지는 본 연구에서 확인하지 못했다. 개발 초기에는 나지가 거의 없어 나지→시가지 전환 면적이 0.005 km²에 불과했고, 본 연구는 같은 땅을 시간 순서로 추적하지 않고 두 시기를 비교했기 때문이다.
+
+이 해석은 NDBI 변화량과 LST 변화량의 관계에서도 확인된다. 1,103개 표본에서 두 변화량의 상관계수는 +0.712, 결정계수는 0.5068이었으며, ΔNDBI가 0.1 클수록 ΔLST는 평균적으로 약 1.37℃ 높게 나타났다. NDBI는 건물뿐 아니라 흙이 드러난 나지에서도 높아지는 지표이므로, 이 관계는 시가지와 나지가 늘어난 곳일수록 온도가 더 많이 올랐음을 보여준다. **따라서 신도시의 온도 상승은 건물이 들어선 것만이 아니라, 흙이 드러나거나 포장으로 덮인 변화 모두와 관련된 것으로 볼 수 있다.**
+
+<figure class="report-result-figure">
+  <img src="figures/fig7-2_landcover_concept.png" alt="토지피복 전환에 따른 지표온도 상승 해석 요약" width="900">
+  <figcaption>그림 7-2. 토지피복 전환에 따른 지표온도 상승 해석 요약</figcaption>
+</figure>
+
+### 7.2 수변 거리-온도 관계와 주변 시가지화 수준(NDBI) 통제의 의미
+개발 후기에는 낙동강에서 100 m 멀어질 때마다 지표온도가 1.707℃씩 높아졌지만, 주변 시가지화 수준(NDBI)을 같게 맞추자 그 폭이 0.596℃로 줄었다(그림 7-3). 즉 강에서 멀수록 더워지는 정도의 약 3분의 2는 주변 시가지화 수준의 차이와 함께 나타난 것이었다. 강 가까운 곳이 낮게 관측된 것은 상당 부분 강변일수록 건물·포장이 적었던 것과 관련된다. 그러나 통제 후에도 95% 신뢰구간(+0.241~+0.951℃/100 m)이 0을 포함하지 않아, 시가지화 수준을 맞춘 뒤에도 강에서 멀수록 온도가 높아지는 관계가 분명하게 확인되었다. **즉 강변의 낮은 지표온도는 강이 있다는 것만으로 주어지는 것이 아니라, 강변에 건물과 포장이 적은 조건과 함께 유지되는 것으로 볼 수 있다.** 개발 초기에는 이러한 관계가 안정적으로 나타나지 않아, 이 해석은 개발 후기를 중심으로 한다.
+
+<figure class="report-result-figure">
+  <img src="figures/fig7-3_river_control.png" alt="수변 거리별 온도 차이와 거리 회귀계수의 NDBI 통제 전후 비교" width="1000">
+  <figcaption>그림 7-3. 개발 후기 수변 거리별 온도 차이와 거리 회귀계수의 NDBI 통제 전후 비교 (막대 끝 선: 95% 신뢰구간)</figcaption>
+</figure>
+
+다만 남은 관계를 모두 강의 영향으로 볼 수는 없다. 강변 부지의 개발 단계나 토양 수분처럼 NDBI로 포착되지 않는 요인이 함께 작용했을 수 있으며, 본 분석으로는 이를 구분할 수 없다.
+
+이는 강 주변 지표온도가 주변 건물·불투수면 조건의 영향을 받는다는 Kirschner et al.(2024)의 보고와 같은 방향이다. 본 연구에서도 NDBI 통제로 거리계수가 크게 줄어, 수변 거리만으로 냉각을 판단하면 과대 해석될 수 있음을 확인하였다.
+
+### 7.3 녹지 거리-온도 관계가 확인되지 않은 이유
+NDBI 통제 후 평균 LST는 녹지 경계 0–30 m(44.868℃)에서 90–120 m(45.392℃)까지 0.524℃ 높아졌다. 그러나 거리 회귀계수(+0.580℃/100 m)의 95% 신뢰구간(−0.194~+1.356℃/100 m)이 0을 포함하고 설명력(R² = 0.027)도 낮았다. **이는 녹지에 냉각 효과가 없다는 뜻이 아니라, 본 연구의 자료와 방법으로는 녹지 거리와 지표온도의 관계를 확정할 수 없었다는 뜻으로 해석해야 한다.** 수변에서 뚜렷한 관계가 나타난 것과 다른 결과이므로, 선행연구와 비교하여 그 이유를 검토하였다.
+
+Gallay et al.(2023)은 본 연구와 같은 Landsat 8 열적외선 자료(100 m 관측, 30 m 재표본화)와 30 m 거리 구간을 사용하였다. 그 결과 1 ha가 넘는 나무 녹지는 약 90 m까지 평균 약 4.5℃의 냉각을 보였으나, 작은 잔디밭 형태의 녹지에서는 냉각 거리가 입증되지 않았다(표 7-1). 본 연구는 녹지를 크기별로 나누지 않고 NDVI 0.20 이상인 픽셀을 모두 녹지로 보았다. 또한 분석 구역의 녹지는 하나로 이어진 공원이 아니라, 작은 녹지들이 건물·도로·나지 사이에 흩어져 있는 형태였다(그림 7-4). 선행연구와의 차이는 이처럼 녹지의 크기를 구분하지 않은 데서 비롯되었을 가능성이 있으며, 구체적인 원인은 다음 세 가지로 볼 수 있다.
+
+<div style="overflow-x:auto; margin:20px 0 8px; font-family:sans-serif;">
+<table style="border-collapse:collapse; width:100%; font-size:15px; border:1px solid #cbd5e1;">
+  <thead>
+    <tr style="background:#1f2937; color:#ffffff;">
+      <th style="padding:12px 14px; text-align:left; width:20%;">비교 항목</th>
+      <th style="padding:12px 14px; text-align:left; width:40%;">Gallay et al. (2023)</th>
+      <th style="padding:12px 14px; text-align:left; width:40%;">본 연구</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#ffffff; border-bottom:1px solid #e2e8f0;">
+      <td style="padding:10px 14px; font-weight:700; color:#1f2937;">대상지</td>
+      <td style="padding:10px 14px;">슬로바키아 즈볼렌(Zvolen)</td>
+      <td style="padding:10px 14px;">부산 에코델타시티</td>
+    </tr>
+    <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+      <td style="padding:10px 14px; font-weight:700; color:#1f2937;">위성 · 해상도</td>
+      <td style="padding:10px 14px;">Landsat 8 · 열적외선 100 m → 30 m</td>
+      <td style="padding:10px 14px;">Landsat 8·9 · 열적외선 100 m → 30 m</td>
+    </tr>
+    <tr style="background:#ffffff; border-bottom:1px solid #e2e8f0;">
+      <td style="padding:10px 14px; font-weight:700; color:#1f2937;">거리 구간</td>
+      <td style="padding:10px 14px;">녹지 경계에서 30 m 간격</td>
+      <td style="padding:10px 14px;">녹지 경계에서 30 m 간격 (0–150 m)</td>
+    </tr>
+    <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+      <td style="padding:10px 14px; font-weight:700; color:#1f2937;">영상</td>
+      <td style="padding:10px 14px;">구름 적은 여름 영상 8장</td>
+      <td style="padding:10px 14px;">시기별 중앙값 합성</td>
+    </tr>
+    <tr style="background:#fff7ed; border-bottom:1px solid #e2e8f0; border-left:5px solid #d9a441;">
+      <td style="padding:10px 14px; font-weight:700; color:#1f2937;">녹지 구분 <span style="font-size:12px; color:#9a3412;">(핵심 차이)</span></td>
+      <td style="padding:10px 14px;"><strong>크기별</strong>(1,000 m² · 1 ha 기준)로 나누고, 나무·잔디 구분</td>
+      <td style="padding:10px 14px;"><strong>구분 없음</strong> · NDVI 0.20 이상 픽셀을 모두 녹지로 봄</td>
+    </tr>
+    <tr style="background:#ffffff; border-left:5px solid #2e8b57;">
+      <td style="padding:10px 14px; font-weight:700; color:#1f2937;">결과</td>
+      <td style="padding:10px 14px;">1 ha 넘는 나무 녹지: 약 90 m까지 평균 약 4.5℃ 냉각<br>작은 잔디밭 형태의 녹지: 냉각 거리 입증 안 됨</td>
+      <td style="padding:10px 14px;">90–120 m까지 +0.524℃ 경향<br>신뢰구간 0 포함 · R² = 0.027 → <strong>관계 확정 못 함</strong></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p class="report-result-table-caption">표 7-1. Gallay et al.(2023)과 본 연구의 녹지 거리 분석 비교</p>
+
+<figure class="report-result-figure">
+  <img src="figures/fig7-4_green_satellite.png" alt="녹지 분석 대상 구역의 녹지 분포" width="1000">
+  <figcaption>그림 7-4. 녹지 분석 대상 구역의 녹지 분포 (빨간 선: 녹지 경계, 하늘색 사각형: 녹지 분석 대상 구역, 검은색: 낙동강 수역)</figcaption>
+</figure>
+
+1. **흩어진 작은 녹지:** 녹지가 하나로 이어져 있지 않아, 녹지 경계에서 같은 거리에 있는 지점이라도 주변 녹지의 크기와 모양, 개수가 서로 다르다. 한 지점이 여러 녹지의 영향을 동시에 받을 수 있어, "가장 가까운 녹지 경계까지의 거리" 하나로는 녹지의 영향을 충분히 나타내기 어렵다.
+2. **열적외선 해상도:** LST는 원래 100 m로 관측된 뒤 30 m 격자로 재표본화되었다. 재표본화해도 실제 관측 해상도는 높아지지 않으므로, 녹지와 녹지 아닌 곳의 온도가 한 값에 섞이고 인접한 30 m 거리 구간 사이의 차이를 구분하기 어렵다. 400 m에 걸쳐 분석한 수변보다 150 m 안의 녹지 분석에서 이 영향이 크게 작용한다.
+3. **중앙값 합성:** 합성 영상은 NDVI·NDBI·LST의 중앙값을 각각 따로 구하므로, 한 픽셀의 세 값이 같은 날의 지표 상태를 나타낸다는 보장이 없고 변수별로 쓰인 관측일 수도 다를 수 있다. 녹지 경계(NDVI)와 온도(LST)가 서로 다른 날을 반영하면 거리-온도 관계가 약해질 수 있다.
+
+<figure class="report-result-figure">
+  <img src="figures/fig7-5_green_causes.png" alt="녹지 거리-온도 관계가 약하게 나타난 세 가지 원인" width="1000">
+  <figcaption>그림 7-5. 녹지 거리-온도 관계가 약하게 나타난 세 가지 원인 (③의 수치는 가상 예시)</figcaption>
+</figure>
+
+따라서 앞으로는 녹지를 크기별로 나누어 분석하고, 가장 가까운 경계까지의 거리와 함께 주변 일정 반경 안의 녹지 면적 비율을 사용할 필요가 있다. 또한 같은 날 관측한 영상이나 드론 열화상처럼 해상도가 높은 자료로 녹지 주변 150 m 안의 온도 변화를 확인할 필요가 있다.
+
 ### 7.4 연구의 한계 및 향후 과제
-본 연구는 위성영상을 이용해 개발 전후의 열환경 변화와 공간별 온도 차이를 수치로 확인하였으나, 결과를 해석할 때 두 가지 한계를 유의해야 한다. 첫째, 본 연구에서 다룬 지표면온도(LST)는 땅 표면의 온도이므로 사람이 실제로 느끼는 대기 온도(기온)나 체감 더위와 똑같이 해석해서는 안 된다. 둘째, 본 연구는 관측 자료를 바탕으로 공간적 연관성을 살펴본 것이므로, 도시 개발이나 수변·녹지 조성이 온열질환 등 실제 건강 피해 감소로 이어진다는 인과관계를 직접 입증하지 않는다. 앞으로는 드론 열화상 촬영이나 현장 기상 관측을 함께 진행해 녹지의 세밀한 냉각 효과를 확인하고, 에코델타시티의 개발이 완전히 마무리된 뒤의 장기적인 변화를 추적할 필요가 있다.
+본 연구는 위성영상으로 개발 전후 열환경 변화와 거리별 온도 차이를 수치로 확인하였으나, 다음 한계를 함께 고려해야 한다.
+
+첫째, 본 연구의 수치는 연구진이 정한 한 가지 분석 기준으로만 계산한 값이다. 거리를 30 m 간격으로 나누고, 주변 시가지화 수준을 반경 90 m로 계산하고, NDVI 0.20 이상을 녹지로 본 것은 모두 연구진이 정한 기준이며, 이 기준이 바뀌면 계수와 신뢰구간도 달라질 수 있다. 실제로 주변 NDBI에 수역을 넣느냐 빼느냐만 바꿔도 개발 후기 수변 거리계수가 +0.596에서 +0.419℃/100 m로 달라졌다. 다만 두 경우 모두 관계의 방향은 같았으므로, 결과는 숫자 자체보다 관계의 방향을 중심으로 해석해야 한다.
+
+둘째, 본 연구는 연구 배경(1.1절)에서 필요하다고 본 토지피복과 지표면 온도의 정량적 관계를 관측 자료로 확인하였으나, 수변·녹지를 조성하면 온도가 낮아진다는 저감 효과를 인과적으로 입증한 것은 아니다. 또한 지표면 온도와 온열질환 같은 건강 피해의 관계는 다루지 않았다. 따라서 본 결과는 공간 계획의 효과를 보장하는 근거가 아니라, 계획을 검토할 때 참고할 수 있는 관계로 해석해야 한다.
+
+셋째, 결과는 에코델타시티 안 약 3.45 km²의 한 구역에서 여름철(7–8월) 낮 한 시점에 관측한 지표면 온도에 근거한다. 따라서 사람이 느끼는 기온이나 체감 더위로 해석해서는 안 되며, 다른 신도시나 다른 계절·시간대에 그대로 일반화하기 어렵다.
+
+넷째, 같은 낙동강 수변에서 시가지화 수준이 높은 곳과 낮은 곳을 나누어 거리별 온도를 따로 비교하지는 않았고, 회귀식에 NDBI를 넣어 통제하는 방법으로 대신하였다. 또한 연구 질문 2에서 계획한 기울기 변화점은 결과로 제시하지 않았다.
+
+향후에는 ① 분석 기준을 바꿔 가며 결과가 유지되는지 확인하고, ② 현재 나지인 구역이 시가지로 완공된 뒤 온도가 어떻게 달라지는지 같은 땅을 시간 순서로 추적하며, ③ 드론 열화상과 현장 기상 관측으로 위성 지표면 온도의 한계를 보완하고, ④ 시가지화 수준별로 나눈 수변 비교와 변화점 산출, 녹지 크기별 분석을 수행할 필요가 있다.
+
+<figure class="report-result-figure">
+  <img src="figures/fig7-6_limits_future.png" alt="연구의 한계와 향후 과제" width="1000">
+  <figcaption>그림 7-6. 연구의 한계와 향후 과제</figcaption>
+</figure>
 
 ---
 
 <h2 id="conclusion" style="scroll-margin-top: 100px;">8. 결론 및 신도시 개발 시사점</h2>
 
-본 연구는 대규모 개발이 진행 중인 부산 에코델타시티를 대상으로 개발 초기(2016–2017년)와 개발 후기(2024–2025년)의 Landsat 8·9 위성영상을 분석하여, 신도시 개발에 따른 열환경 변화와 수변·녹지의 거리별 냉각 효과를 확인하였다. 분석 결과, 농경지가 시가지(+2.385℃)와 나지(+3.305℃)로 바뀌면서 시가지 유지지역 기준(5.761℃)보다 뚜렷한 온도 상승이 나타났으며(NDBI 변화량과 지표면온도 변화량의 상관계수 r = +0.712, 결정계수 R² = 0.5068), 낙동강 수변은 주변 건물 밀도(NDBI)의 영향을 제외하고도 통계적으로 유의한 냉각 효과(+0.596℃/100m, 95% 신뢰구간: +0.241~+0.951℃/100m)를 보였다. 반면, 개발 후기 녹지 구역은 120m 구간까지 온도가 완만하게 오르는 경향(+0.524℃)은 있었으나 설명력이 매우 낮고(R² = 0.027) 신뢰구간이 0을 포함(−0.194~+1.356℃/100m)하여 통계적으로 뚜렷한 냉각 효과는 확인되지 않았다.
+본 연구는 대규모 개발이 진행 중인 부산 에코델타시티를 대상으로 개발 초기(2016–2017년)와 개발 후기(2024–2025년)의 Landsat 8·9 위성영상을 분석하여, 세 가지 세부목적에 대해 다음과 같은 답을 얻었다.
+
+- **세부목적 1 · 개발 전후 지표온도 변화:** 농경지가 시가지와 나지로 바뀐 곳은 시가지 유지지역 기준(5.761℃)보다 더 크게 올랐으며, 농경지→나지(+3.305℃)가 농경지→시가지(+2.385℃)보다 상승폭이 컸다. NDBI 변화량이 클수록 지표온도 변화량도 컸다(r = +0.712, R² = 0.5068).
+- **세부목적 2 · 수변 거리별 지표온도 변화:** 개발 후기에는 강에서 100 m 멀어질 때마다 지표온도가 1.707℃씩 높았고, 주변 시가지화 수준(NDBI)을 통제한 뒤에도 그 관계가 분명하게 확인되었다(+0.596℃/100 m, 95% 신뢰구간 +0.241~+0.951℃/100 m). 다만 관계의 약 3분의 2는 주변 시가지화 수준의 차이와 함께 나타났다.
+- **세부목적 3 · 녹지 거리별 지표온도 변화:** 개발 후기 녹지 경계에서 90–120 m까지 지표온도가 0.524℃ 높아지는 경향은 있었으나, 설명력이 낮고(R² = 0.027) 신뢰구간이 0을 포함하여(−0.194~+1.356℃/100 m) 녹지 거리와 지표온도의 관계는 확정하지 못했다.
 
 이상의 결과를 바탕으로, 앞으로 신도시를 개발할 때 열환경을 관리하기 위한 세 가지 시사점을 제시한다.
 
-1. **단계별 공사를 통한 빈 땅(나지) 노출 최소화:** 농경지가 완공된 시가지(+2.385℃)보다 공사 중인 나지(+3.305℃)일 때 온도가 더 크게 올랐다. 따라서 신도시를 지을 때 넓은 땅을 한꺼번에 파헤쳐 빈 땅으로 오래 두기보다, 구역을 나누어 단계적으로 공사하고 아직 착공하지 않은 부지에는 임시로 풀이나 나무를 심어 열이 쌓이는 것을 줄여야 한다.
-2. **수변 인접 구역의 건물 밀도 관리 및 공간 활용:** 주변 건물 밀도(NDBI)의 영향을 빼고도 낙동강 수변의 냉각 효과(+0.596℃/100m)가 분명하게 확인되었으며, 건물 밀도가 낮을수록 수변과의 온도 차이가 더 크게 나타났다. 따라서 강변 가까운 구역에 고밀도 건물이나 불투수면을 빽빽하게 배치하기보다, 수변 인접부의 건물 밀도를 낮게 유지하고 공원이나 휴식 공간처럼 주민들이 열환경 완화 효과를 직접 누릴 수 있는 용도로 활용하는 것이 바람직하다.
-3. **녹지 단독 배치의 한계 고려 및 주변 피복 관리 병행:** 본 연구에서 녹지 경계로부터의 거리별 냉각 효과는 통계적으로 뚜렷하게 확인되지 않았다(R² = 0.027, 신뢰구간 0 포함). 이는 신도시 안에서 녹지만 따로 조성하는 것으로는 주변 시가지의 온도를 확실하게 낮추는 데 한계가 있을 수 있음을 보여준다. 따라서 녹지 배치에만 의존하기보다, 녹지 주변의 불투수면과 나지 비율을 함께 줄이고 그늘막 등 보조적인 열 저감 수단을 병행 검토할 필요가 있다.
+1. **단계별 공사로 나지 노출 면적과 기간 줄이기:** 농경지가 나지로 바뀐 구역(+3.305℃)이 시가지로 바뀐 구역(+2.385℃)보다 온도가 더 크게 올랐다. 따라서 넓은 부지를 한꺼번에 나지로 만들어 오래 두기보다, 구역을 나누어 단계적으로 공사하고 조성이 끝난 구역부터 건축과 조경을 이어 나가 나지 상태로 남는 면적과 기간을 줄이는 공정 계획이 필요하다.
+2. **수변 가까운 구역은 건물과 포장을 적게 계획:** 개발 후기에는 강변(30–60 m)의 지표온도가 강에서 떨어진 곳(180–210 m)보다 7.003℃ 낮았다. 그런데 이 차이의 약 3분의 2는 강변에 건물과 포장이 적었던 조건과 함께 나타났다(주변 시가지화 수준을 같게 맞추면 7.003℃ → 2.316℃). 따라서 강변을 빽빽하게 개발하면 강변이 시원하던 이점의 상당 부분을 잃을 수 있다. 강변의 낮은 지표온도를 지키려면, 온도 차이가 확인된 수변 약 200 m 안쪽은 건물과 포장 면적을 적게 계획하는 것이 바람직하다.
+3. **녹지는 작게 흩어 놓기보다 크게 이어서 계획:** 본 연구에서는 녹지와의 거리와 지표온도의 관계를 확정하지 못했으며, 분석 구역의 녹지는 작은 녹지들이 건물·도로·나지 사이에 흩어져 있는 형태였다. 선행연구에서는 같은 종류의 녹지라도 클수록 냉각 거리가 뚜렷했고, 작은 녹지에서는 냉각 거리가 입증되지 않은 경우가 있었다(Gallay et al., 2023). 따라서 신도시 녹지는 작게 나누어 흩어 놓기보다 일정 크기 이상으로 이어서 계획하는 방안을 검토할 수 있으며, 그 효과는 녹지 크기별 추가 분석으로 확인해야 한다.
 
-<div style="margin: 24px 0; overflow-x: auto; font-family: sans-serif;">
-  <table style="width: 100%; border-collapse: collapse; font-size: 14px; border: 1px solid #cbd5e1;">
-    <thead>
-      <tr style="background: #1e293b; color: #ffffff; text-align: left;">
-        <th style="padding: 12px 14px; width: 18%;">분석 파트</th>
-        <th style="padding: 12px 14px; width: 34%;">핵심 관측 결과</th>
-        <th style="padding: 12px 14px; width: 48%;">신도시 개발 시사점</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr style="border-bottom: 1px solid #e2e8f0; background: #ffffff;">
-        <td style="padding: 12px 14px; font-weight: 700; color: #b91c1c;">토지피복 전환</td>
-        <td style="padding: 12px 14px; line-height: 1.6;">
-          농경지→나지 <strong>+3.305℃</strong><br>
-          농경지→시가지 <strong>+2.385℃</strong><br>
-          <span style="font-size: 12px; color: #64748b;">(시가지 유지 기준 5.761℃ 차감)</span>
-        </td>
-        <td style="padding: 12px 14px; line-height: 1.6;">
-          <strong>단계별 공사로 빈 땅(나지) 노출 최소화</strong><br>
-          구역별 순차 착공 및 미착공 부지 임시 녹화 병행
-        </td>
-      </tr>
-      <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-        <td style="padding: 12px 14px; font-weight: 700; color: #0369a1;">수변 냉각 효과</td>
-        <td style="padding: 12px 14px; line-height: 1.6;">
-          NDBI 통제 후 <strong>+0.596℃/100m</strong><br>
-          <span style="font-size: 12px; color: #64748b;">(95% 신뢰구간 +0.241~+0.951, 유의함)</span>
-        </td>
-        <td style="padding: 12px 14px; line-height: 1.6;">
-          <strong>수변 인접 구역 건물 밀도 관리 및 공간 활용</strong><br>
-          강변 고밀도 배치 지양, 공원·휴식 공간으로 활용
-        </td>
-      </tr>
-      <tr style="background: #ffffff;">
-        <td style="padding: 12px 14px; font-weight: 700; color: #15803d;">녹지 냉각 효과</td>
-        <td style="padding: 12px 14px; line-height: 1.6;">
-          설명력 <strong>R² = 0.027</strong><br>
-          <span style="font-size: 12px; color: #64748b;">(95% 신뢰구간 −0.194~+1.356, 0 포함)</span>
-        </td>
-        <td style="padding: 12px 14px; line-height: 1.6;">
-          <strong>녹지 단독 배치 한계 고려 및 주변 피복 관리</strong><br>
-          주변 불투수면·나지 비율 축소 및 그늘막 등 보조 수단 병행
-        </td>
-      </tr>
-    </tbody>
-  </table>
+<div style="margin:24px 0; font-family:sans-serif;">
+  <div style="display:flex; align-items:stretch; border:1px solid #e2e8f0; border-left:12px solid #d9a441; border-radius:10px; margin-bottom:16px; overflow:hidden; background:#ffffff;">
+    <div style="flex:0 0 96px; display:flex; align-items:center; justify-content:center; font-size:44px; font-weight:800; color:#1f2937; background:#fdf6e7;">1</div>
+    <div style="flex:1; padding:22px 26px;">
+      <div style="font-size:28px; font-weight:800; color:#1f2937; line-height:1.35;">단계별 공사로 나지 노출 면적·기간 줄이기</div>
+      <div style="font-size:17px; color:#475569; margin-top:10px;">근거 · 토지피복 전환: 농경지→나지 +3.305℃ &gt; 농경지→시가지 +2.385℃</div>
+    </div>
+  </div>
+  <div style="display:flex; align-items:stretch; border:1px solid #e2e8f0; border-left:12px solid #2f7fc1; border-radius:10px; margin-bottom:16px; overflow:hidden; background:#ffffff;">
+    <div style="flex:0 0 96px; display:flex; align-items:center; justify-content:center; font-size:44px; font-weight:800; color:#1f2937; background:#eaf2fa;">2</div>
+    <div style="flex:1; padding:22px 26px;">
+      <div style="font-size:28px; font-weight:800; color:#1f2937; line-height:1.35;">수변 가까운 구역은 건물과 포장을 적게</div>
+      <div style="font-size:17px; color:#475569; margin-top:10px;">근거 · 수변: 강변이 7.003℃ 낮았고, 그 차이의 약 2/3는 건물·포장이 적은 조건과 함께 나타남</div>
+    </div>
+  </div>
+  <div style="display:flex; align-items:stretch; border:1px solid #e2e8f0; border-left:12px solid #2e8b57; border-radius:10px; overflow:hidden; background:#ffffff;">
+    <div style="flex:0 0 96px; display:flex; align-items:center; justify-content:center; font-size:44px; font-weight:800; color:#1f2937; background:#e8f4ed;">3</div>
+    <div style="flex:1; padding:22px 26px;">
+      <div style="font-size:28px; font-weight:800; color:#1f2937; line-height:1.35;">녹지는 작게 흩어 놓기보다 크게 이어서</div>
+      <div style="font-size:17px; color:#475569; margin-top:10px;">근거 · 녹지: 관계 확정 못 함(R² = 0.027), 분석 구역의 녹지가 작게 흩어져 있음</div>
+    </div>
+  </div>
 </div>
+<p class="report-result-table-caption">표 8-1. 분석 결과에 따른 신도시 개발 시사점</p>
 
-<figure style="margin: 24px 0; text-align: center;">
-  <img src="figures/newtown_plan.png" alt="신도시 열환경 관리 공간 배치 개념도" style="max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;">
-  <figcaption style="font-size: 13px; color: #64748b; margin-top: 8px;">
-    <strong>그림 8-1. 분석 결과에 기반한 신도시 열환경 관리 공간 배치 개념도</strong><br>
-    (좌→우) ① 수변 냉각 구역 → ② 수변 인접 저밀도 공원·휴식 공간 → ③ 녹지 및 주변 불투수면 관리·그늘막 병행 구역 → ④ 단계별 공사 및 미착공 부지 임시 녹화 구역
-  </figcaption>
+<figure class="report-result-figure">
+  <img src="figures/fig8-1_newtown_concept.png" alt="신도시 열환경 관리 개념도" width="1000">
+  <figcaption>그림 8-1. 분석 결과를 반영한 신도시 열환경 관리 개념도 (실제 배치 계획이 아닌 개념도)</figcaption>
 </figure>
 
-종합하면, 본 연구에서 확인한 토지피복 변화별 온도 상승폭과 수변·녹지의 거리별 온도 차이는 앞으로 신도시를 계획할 때 열환경 악화를 줄이고 쾌적한 도시 공간을 설계하는 기초 자료로 활용될 수 있을 것이다.
+종합하면, 신도시의 열환경은 개발이 끝난 모습만으로 정해지지 않는다. 공사 중 드러난 땅을 얼마나 줄이는지, 강변에 건물과 포장을 얼마나 적게 두는지, 녹지를 어떻게 모아 배치하는지에 따라 달라질 수 있다. 본 연구의 결과는 이러한 계획을 세울 때 참고할 수 있는 기초 자료로 활용될 수 있을 것이다.
 
 ---
 
@@ -752,4 +776,6 @@ Weng, Q. (2001). A remote sensing-GIS evaluation of urban expansion and its impa
 
 부산광역시. (연도미상). <em>부산 에코델타시티 스마트시티 조성사업</em>. 부산광역시 공식 포털사이트. <a href="https://www.busan.go.kr" target="_blank">https://www.busan.go.kr</a><br><br>
 
-Kirschner, V., Moravec, D., Macků, K., Kozhoridze, G., & Komárek, J. (2024). Comparing the effects of green and blue bodies and urban morphology on land surface temperatures close to rivers and large lakes. *Land, 13*(2), 162. https://doi.org/10.3390/land13020162
+Kirschner, V., Moravec, D., Macků, K., Kozhoridze, G., & Komárek, J. (2024). Comparing the effects of green and blue bodies and urban morphology on land surface temperatures close to rivers and large lakes. *Land, 13*(2), 162. https://doi.org/10.3390/land13020162<br><br>
+
+Gallay, I., Olah, B., Murtinová, V., & Gallayová, Z. (2023). Quantification of the cooling effect and cooling distance of urban green spaces based on their vegetation structure and size as a basis for management tools for mitigating urban climate. <em>Sustainability, 15</em>(4), 3705. https://doi.org/10.3390/su15043705
